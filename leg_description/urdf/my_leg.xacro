@@ -1,19 +1,39 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="RR">
 
+<material name="blue">
+  <color rgba="0 0 0.8 1"/>
+</material>
+
+<material name="red">
+  <color rgba="0.8 0 0 1"/>
+</material>
+
+<material name="grey">
+  <color rgba="0.5 0.5 0.5 1"/>
+</material>
+
+<material name="DarkGrey">
+  <color rgba="0.3 0.3 0.3 1"/>
+</material>
+
 <!-- Defining macros -->
-<xacro:property name="box_X" value="0.2" />
-<xacro:property name="box_Y" value="0.2" />
-<xacro:property name="box_Z" value="0.5" />
+<xacro:property name="BaseHeight" value="0.5" />
 
 <!-- Actuator -->
+<xacro:property name="actuator_nudge" value="0.00666" />
+<xacro:property name="actuator_cylinder_width" value="0.03084" />
 <xacro:property name="actuator_total_width" value="0.05708" />
 <xacro:property name="actuator_diameter" value="0.1031" />
+<!-- "actuator_offset_from_peripheral_connector" -> AOFPC -->
+<xacro:property name="AOFPC" value="0.05755" />
 
-<xacro:property name="bodylen" value="1" />
-<xacro:property name="height" value="0.1" />
-<xacro:property name="offset" value="0.1" />
-<xacro:property name="base_height" value="1" />
+<!-- Link2 -->
+<xacro:property name="link1_2D" value="0.089" />
+
+<!-- Link3 -->
+<xacro:property name="link2_3D" value="0.337" />
+
 
 <!-- Moment of inertia -->
 <xacro:macro name="default_inertial" params="mass xl yl zl *Dorigin">
@@ -26,57 +46,19 @@
     </inertial>
 </xacro:macro>
 
-<material name="blue">
-  <color rgba="0 0 0.8 1"/>
-</material>
-
-<material name="red">
-  <color rgba="0.8 0 0 1"/>
-</material>
 
 <!-- Addin objects: -->
 
 <link name="world"/> 
 
- <joint name="world_joint" type="fixed">
-  <parent link="world"/>
-  <child link="base_link"/>
-  <origin rpy="0 ${-pi/2} ${-pi/2}" xyz="0 0 ${box_Z}"/>
-</joint> 
-
-<!-- <link name="base_link">
-  <visual>
-    <geometry>
-      <box size="${box_X} ${box_Y} ${box_Z}"/>
-    </geometry>
-    <origin rpy="0 0 0" xyz="0 0 ${-box_Z/2}"/>
-    <material name="blue"/>
-  </visual>
-  <collision>
-    <geometry>
-      <box size="${box_X} ${box_Y} ${box_Z}"/>
-    </geometry>
-    <origin rpy="0 0 0" xyz="0 0 ${-box_Z/2}"/>
-  </collision> 
-  <inertial>
-    <mass value="100" />
-    <inertia ixx="0.0100" ixy="0.0" ixz="0.0"
-              iyy="0.0100" iyz="0.0"
-              izz="0.0100" />
-    <origin rpy="0 0 0" xyz="0 0 ${-base_height/2}"/>
-  </inertial> 
-</link>
- -->
-
-<!-- Link 1  -->
+<!-- Base Link  -->
 <link name="base_link">
   <visual>
     <geometry>      
-        <mesh scale=".001 .001 .001" filename="package://leg_description/meshes/link2stl.STL" />
+        <mesh scale=".001 .001 .001" filename="package://leg_description/meshes/Base.STL" />
     </geometry>
-    <origin rpy="0 0 0" xyz="${-actuator_diameter/2} ${-actuator_diameter/2} 0"/>
-    <!-- <origin rpy="0 ${-pi/2} ${-pi/2}" xyz="0 0 0"/> -->
-    <material name="red"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <material name="DarkGrey"/>
   </visual>
   <collision>
     <geometry>
@@ -88,17 +70,23 @@
     <origin rpy="0 0 0" xyz="0 0 0" />
   </xacro:default_inertial>
 </link>
-  
+
+ <joint name="world_joint" type="fixed">
+  <parent link="world"/>
+  <child link="base_link"/>
+  <origin rpy="0 ${-pi/2} ${-pi/2}" xyz="${AOFPC} 0 ${BaseHeight}"/>
+</joint>   
+
 
 <!-- Link 1  -->
-<!-- <link name="link1">
+<link name="link1">
   <visual>
     <geometry>      
-        <mesh scale=".001 .001 .001" filename="package://leg_description/meshes/link2stl.STL" />
+        <mesh scale=".001 .001 .001" filename="package://leg_description/meshes/link1.STL" />
     </geometry>
     <origin rpy="0 0 0" xyz="0 0 0"/>
-    <origin rpy="0 ${-pi/2} ${-pi/2}" xyz="0 0 0"/>
-    <material name="red"/>
+    <!-- <origin rpy="0 ${-pi/2} ${-pi/2}" xyz="0 0 0"/> -->
+    <material name="grey"/>
   </visual>
   <collision>
     <geometry>
@@ -115,7 +103,61 @@
   <parent link="base_link"/>
   <child link="link1"/>
   <axis rpy = "0 0 0" xyz="0 0 1"/>
-  <origin rpy = "0 0 0" xyz="0 0 ${actuator_total_width/2}"/>
-</joint>   -->
+  <origin rpy = "${pi} 0 0" xyz="0 0 ${actuator_cylinder_width/2+actuator_nudge +AOFPC}"/>
+</joint>  
+
+<!-- Link 2  -->
+<link name="link2">
+  <visual>
+    <geometry>      
+        <mesh scale=".001 .001 .001" filename="package://leg_description/meshes/link2stl.STL" />
+    </geometry>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <material name="DarkGrey"/>
+  </visual>
+  <collision>
+    <geometry>
+      <cylinder radius="${actuator_diameter}" length="${actuator_total_width}"/>
+    </geometry>
+    <origin rpy="${pi/2} 0 ${-pi/2}" xyz="0 0 0"/>
+  </collision>
+  <xacro:default_inertial mass="10" xl="1" yl="1" zl="1">
+    <origin rpy="0 0 0" xyz="0 0 0" />
+  </xacro:default_inertial>
+</link>
+
+<joint name="link1_to_link2" type="continuous"> 
+  <parent link="link1"/>
+  <child link="link2"/>
+  <axis rpy = "0 0 0" xyz="0 0 1"/>
+  <origin rpy = "${pi/2} ${pi/2} 0" xyz="0 ${-(  actuator_cylinder_width/2+actuator_nudge +link1_2D)}  0"/>
+</joint> 
+
+<!-- Link 3  -->
+<link name="link3">
+  <visual>
+    <geometry>      
+        <mesh scale=".001 .001 .001" filename="package://leg_description/meshes/link3stl.STL" />
+    </geometry>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <material name="grey"/>
+  </visual>
+  <collision>
+    <geometry>
+      <cylinder radius="${actuator_diameter}" length="${actuator_total_width}"/>
+    </geometry>
+    <origin rpy="${pi/2} 0 ${-pi/2}" xyz="0 0 0"/>
+  </collision>
+  <xacro:default_inertial mass="10" xl="1" yl="1" zl="1">
+    <origin rpy="0 0 0" xyz="0 0 0" />
+  </xacro:default_inertial>
+</link>
+
+<joint name="link2_to_link3" type="continuous"> 
+  <parent link="link2"/>
+  <child link="link3"/>
+  <axis rpy = "0 0 0" xyz="0 0 1"/>
+  <origin rpy = "0 0 0" xyz="${link2_3D} 0  0"/>
+</joint> 
 
 </robot>
