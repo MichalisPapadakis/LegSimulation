@@ -12,14 +12,15 @@
 <!-- NODES -->
 <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizConfig)"/>
 
-<node name="TwoLinkController" pkg="controller_manager" type="spawner" respawn="false"
+<node name="LegController" pkg="controller_manager" type="spawner" respawn="false"
 	output="screen" ns="/2link" args="joint_state_controller joint1_position_controller joint2_position_controller" />
 
 <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" >
     <remap from="/joint_states" to="/2link/joint_states"/>
 </node>
 
-<node name="rqt" pkg="rqt_gui" type="rqt_gui" args=" --perspective-file $(find my_2link)/rqtPerspectives/2linkGUI.perspective"/>
+<node name="rqt" pkg="rqt_gui" type="rqt_gui" />
+<!-- args=" - -perspective-file $(find my_2link)/rqtPerspectives/2linkGUI.perspective"/> -->
 
 <!-- GAZEBO -->
 <include file="$(find gazebo_ros)/launch/empty_world.launch">
@@ -36,8 +37,8 @@
 <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="end_effector_broadcaster" args="$(arg half_width) 0 0 0 0 0 1 end_effector_link end_effector" /> -->
 
 <!-- High Level Controller -->
-<node name="HLcontroller" pkg="my_2link" type="2link_high_level_controller" output="screen" >
+<!-- <node name="HLcontroller" pkg="my_2link" type="2link_high_level_controller" output="screen" >
     <rosparam file="$(find my_2link)/launch/robot.yaml" command="load" />
-</node>
+</node> -->
 
 </launch>
