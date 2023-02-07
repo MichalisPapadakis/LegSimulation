@@ -1,0 +1,18 @@
+<launch>
+
+<!-- ARGS -->
+<arg name="rvizConfig" default="$(find leg_description)/rvizConfigs/config1.rviz" />
+<arg name="model"      default="$(find leg_description)/urdf/my_leg.xacro" />  
+
+<!-- PARAMETERS -->
+<param name="robot_description" command="$(find xacro)/xacro $(arg model)" />
+
+<!-- NODES -->
+<node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizConfig)"/>
+<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+
+<!-- If you add joints, you want this, in order to set the joint variables -->
+<node name="joint_state_publisher" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" />
+
+
+</launch>
