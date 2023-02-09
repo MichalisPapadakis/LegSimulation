@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="RR">
 
+<!-- Colors -->
 <material name="blue">
   <color rgba="0 0 0.8 1"/>
 </material>
@@ -28,11 +29,16 @@
 <!-- "actuator_offset_from_peripheral_connector" -> AOFPC -->
 <xacro:property name="AOFPC" value="0.05755" />
 
+<!-- Actuator Limits -->
+<xacro:property name="velocity_limit" value="398" />
+<xacro:property name="effort_limit" value="0.8844" />
+
 <!-- Link2 -->
 <xacro:property name="link1_2D" value="0.089" />
 
 <!-- Link3 -->
 <xacro:property name="link2_3D" value="0.337" />
+<xacro:property name="link3_angle_limit" value="2.15" />
 
 
 <!-- Moment of inertia -->
@@ -99,12 +105,23 @@
   </xacro:default_inertial>
 </link>
 
-<joint name="base_to_link1" type="continuous"> 
+<joint name="base_to_link1" type="revolute"> 
   <parent link="base_link"/>
   <child link="link1"/>
   <axis rpy = "0 0 0" xyz="0 0 1"/>
+  <limit lower="${-pi/2}" upper="${pi/2}" effort="${effort_limit}" velocity="${velocity_limit}" />
   <origin rpy = "${pi} 0 0" xyz="0 0 ${actuator_cylinder_width/2+actuator_nudge +AOFPC}"/>
 </joint>  
+
+<transmission name="base_link1_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <actuator name="$motor1">
+      <mechanicalReduction>7</mechanicalReduction>
+    </actuator>
+    <joint name="base_to_link1">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+  </transmission>
 
 <!-- Link 2  -->
 <link name="link2">
@@ -133,6 +150,16 @@
   <origin rpy = "${pi/2} ${pi/2} 0" xyz="0 ${-(  actuator_cylinder_width/2+actuator_nudge +link1_2D)}  0"/>
 </joint> 
 
+<transmission name="link1_link2_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <actuator name="$motor2">
+      <mechanicalReduction>10</mechanicalReduction>
+    </actuator>
+    <joint name="link1_to_link2">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+  </transmission>
+
 <!-- Link 3  -->
 <link name="link3">
   <visual>
@@ -153,11 +180,31 @@
   </xacro:default_inertial>
 </link>
 
-<joint name="link2_to_link3" type="continuous"> 
+<joint name="link2_to_link3" type="revolute"> 
   <parent link="link2"/>
   <child link="link3"/>
   <axis rpy = "0 0 0" xyz="0 0 1"/>
   <origin rpy = "0 0 0" xyz="${link2_3D} 0  0"/>
+  <limit lower="${-link3_angle_limit}" upper="${link3_angle_limit}" effort="${effort_limit}" velocity="${velocity_limit}" />
+
 </joint> 
+
+<transmission name="link2_link3_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <actuator name="$motor3">
+      <mechanicalReduction>10</mechanicalReduction>
+    </actuator>
+    <joint name="link2_to_link3">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+  </transmission>
+
+<!-- Gazebo -->
+<gazebo> 
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+      <robotNamespace>/leg</robotNamespace>
+    </plugin>
+</gazebo>
+
 
 </robot>

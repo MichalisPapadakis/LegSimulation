@@ -1,25 +1,25 @@
 <launch>
 
 <!-- ARGS -->
-<arg name="rvizConfig" default="$(find my_2link)/rvizConfig/config.rviz" />
-<arg name="model"      default="$(find my_2link)/urdf/my_2link.xarco" />  
-<arg name="half_width"      default="0.1" />
+<arg name="rvizConfig" default="$(find leg_description)/rvizConfigs/config1.rviz" />
+<arg name="model"      default="$(find leg_description)/urdf/my_leg.xacro" />  
+<!-- <arg name="half_width"      default="0.1" /> -->
 
 <!-- PARAMETERS -->
 <param name="robot_description" command="$(find xacro)/xacro $(arg model)" />
-<rosparam file="$(find my_2link)/launch/controller.yaml" command="load"/>
+<rosparam file="$(find leg_description)/launch/controller.yaml" command="load"/>
 
 <!-- NODES -->
 <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizConfig)"/>
 
 <node name="LegController" pkg="controller_manager" type="spawner" respawn="false"
-	output="screen" ns="/2link" args="joint_state_controller joint1_position_controller joint2_position_controller" />
+	output="screen" ns="/leg" args="joint_state_controller" />
 
 <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" >
-    <remap from="/joint_states" to="/2link/joint_states"/>
+    <remap from="/joint_states" to="/leg/joint_states"/>
 </node>
 
-<node name="rqt" pkg="rqt_gui" type="rqt_gui" />
+<!-- <node name="rqt" pkg="rqt_gui" type="rqt_gui" /> -->
 <!-- args=" - -perspective-file $(find my_2link)/rqtPerspectives/2linkGUI.perspective"/> -->
 
 <!-- GAZEBO -->
