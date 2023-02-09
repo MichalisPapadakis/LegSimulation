@@ -79,7 +79,7 @@
     <geometry>
       <cylinder radius="${actuator_diameter/2+Connector1_L}" length="${actuator_total_width}"/>
     </geometry>
-    <origin rpy="0 0 0" xyz="0 ${actuator_midplane_origin_offset/2} 0"/>
+    <origin rpy="0 0 0" xyz="0 0 ${-actuator_midplane_origin_offset/2}"/>
   </collision>
   <xacro:default_inertial mass="10" xl="1" yl="1" zl="1">
     <origin rpy="0 0 0" xyz="0 0 0" />
@@ -190,7 +190,7 @@
     <origin rpy="0 0 0" xyz="${ link3_ED- footD/2  } 0 0"/>
   </collision>
   <xacro:default_inertial mass="10" xl="1" yl="1" zl="1">
-    <origin rpy="0 0 0" xyz="0 0 0" />
+    <origin rpy="0 0 0" xyz="${link3_ED/2} 0 0" />
   </xacro:default_inertial>
 </link>
 
