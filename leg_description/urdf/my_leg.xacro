@@ -22,7 +22,18 @@
 <xacro:property name="BaseHeight" value="0.5" />
 
 <!-- Connectors -->
-<xacro:property name="Connector1_L" value="0.006" />
+<xacro:property name="connectorL_1" value="0.006" />
+<xacro:property name="connectorL_2" value="0.027" />
+
+<!-- Hip -->
+<xacro:property name="hipW" value="0.049" />
+
+<!-- Knee -->
+<xacro:property name="knee_gearD" value="0.05" />
+
+<!-- foot -->
+<xacro:property name="legD" value="0.05" />
+
 
 <!-- Actuator -->
 <xacro:property name="actuator_nudge" value="0.00666" />
@@ -37,7 +48,9 @@
 <!-- Generated Quantities -->
 <xacro:property name="actuator_midplane_origin_offset" value="${(actuator_total_width-actuator_cylinder_width)/2}" />
 <!-- "actuator_offset_from_peripheral_connector" -> AOFPC -->
-<xacro:property name="AOFPC" value="${actuator_diameter/2+Connector1_L}" />
+<xacro:property name="AOFPC" value="${actuator_diameter/2+connectorL_1}" />
+<xacro:property name="actuator3_wt_connectorL" value="${actuator_cylinder_width+connectorL_2+actuator_nudge}" />
+
 
 <!-- Link2 -->
 <xacro:property name="link1_2D" value="0.089" />
@@ -77,7 +90,7 @@
   </visual>
   <collision>
     <geometry>
-      <cylinder radius="${actuator_diameter/2+Connector1_L}" length="${actuator_total_width}"/>
+      <cylinder radius="${actuator_diameter/2+connectorL_1}" length="${actuator_total_width}"/>
     </geometry>
     <origin rpy="0 0 0" xyz="0 0 ${-actuator_midplane_origin_offset/2}"/>
   </collision>
@@ -103,7 +116,7 @@
   </visual>
   <collision>
     <geometry>
-      <cylinder radius="${actuator_diameter/2+Connector1_L}" length="${actuator_total_width}"/>
+      <cylinder radius="${actuator_diameter/2+connectorL_1}" length="${actuator_total_width}"/>
     </geometry>
     <origin rpy="${pi/2} 0 0" xyz="0  ${actuator_midplane_origin_offset/2} 0"/>
   </collision>
@@ -140,11 +153,17 @@
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <material name="DarkGrey"/>
   </visual>
-  <collision>
+  <collision name="link2_leg">
     <geometry>
-      <cylinder radius="0.025" length="${link2_3D}"/>
+      <cylinder radius="${legD/2}" length="${link2_3D}"/>
     </geometry>
     <origin rpy="0 ${pi/2} 0" xyz="${link2_3D /2} 0 0"/>
+  </collision>
+  <collision name="link2_unit">
+    <geometry>
+      <cylinder radius="${actuator_diameter/2+connectorL_1}" length="${hipW+actuator3_wt_connectorL}"/>
+    </geometry>
+    <origin rpy="0 0 0" xyz="0 0 ${-(actuator3_wt_connectorL/2)}"/>
   </collision>
   <xacro:default_inertial mass="10" xl="1" yl="1" zl="1">
     <origin rpy="0 0 0" xyz="0 0 0" />
@@ -179,9 +198,15 @@
   </visual>
   <collision name="link3_leg">
     <geometry>
-      <cylinder radius="0.025" length="${link3_ED- (footD/2) }"/>
+      <cylinder radius="${legD/2}" length="${link3_ED- (footD/2) }"/>
     </geometry>
     <origin rpy="0 ${pi/2} 0" xyz="${( link3_ED- footD/2 )/2  } 0 0"/>
+  </collision>
+  <collision name="link3_knee">
+    <geometry>
+      <cylinder radius="${knee_gearD/2}" length="${legD }"/>    
+    </geometry>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
   </collision>
   <collision name="link3_foot">
     <geometry>
