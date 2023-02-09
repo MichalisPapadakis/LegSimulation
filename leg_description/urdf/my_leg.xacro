@@ -21,17 +21,23 @@
 <!-- Defining macros -->
 <xacro:property name="BaseHeight" value="0.5" />
 
+<!-- Connectors -->
+<xacro:property name="Connector1_L" value="0.006" />
+
 <!-- Actuator -->
 <xacro:property name="actuator_nudge" value="0.00666" />
 <xacro:property name="actuator_cylinder_width" value="0.03084" />
 <xacro:property name="actuator_total_width" value="0.05708" />
 <xacro:property name="actuator_diameter" value="0.1031" />
-<!-- "actuator_offset_from_peripheral_connector" -> AOFPC -->
-<xacro:property name="AOFPC" value="0.05755" />
 
 <!-- Actuator Limits -->
 <xacro:property name="velocity_limit" value="398" />
 <xacro:property name="effort_limit" value="0.8844" />
+
+<!-- Generated Quantities -->
+<xacro:property name="actuator_midplane_origin_offset" value="${(actuator_total_width-actuator_cylinder_width)/2}" />
+<!-- "actuator_offset_from_peripheral_connector" -> AOFPC -->
+<xacro:property name="AOFPC" value="${actuator_diameter/2+Connector1_L}" />
 
 <!-- Link2 -->
 <xacro:property name="link1_2D" value="0.089" />
@@ -39,6 +45,9 @@
 <!-- Link3 -->
 <xacro:property name="link2_3D" value="0.337" />
 <xacro:property name="link3_angle_limit" value="2.15" />
+<xacro:property name="link3_ED" value="0.369" />
+<xacro:property name="footD" value="0.050" />
+
 
 
 <!-- Moment of inertia -->
@@ -68,9 +77,9 @@
   </visual>
   <collision>
     <geometry>
-      <cylinder radius="${actuator_diameter}" length="${actuator_total_width}"/>
+      <cylinder radius="${actuator_diameter/2+Connector1_L}" length="${actuator_total_width}"/>
     </geometry>
-    <origin rpy="${pi/2} 0 ${-pi/2}" xyz="0 0 0"/>
+    <origin rpy="0 0 0" xyz="0 ${actuator_midplane_origin_offset/2} 0"/>
   </collision>
   <xacro:default_inertial mass="10" xl="1" yl="1" zl="1">
     <origin rpy="0 0 0" xyz="0 0 0" />
@@ -83,7 +92,6 @@
   <origin rpy="0 ${-pi/2} ${-pi/2}" xyz="${AOFPC} 0 ${BaseHeight}"/>
 </joint>   
 
-
 <!-- Link 1  -->
 <link name="link1">
   <visual>
@@ -91,14 +99,13 @@
         <mesh scale=".001 .001 .001" filename="package://leg_description/meshes/link1.STL" />
     </geometry>
     <origin rpy="0 0 0" xyz="0 0 0"/>
-    <!-- <origin rpy="0 ${-pi/2} ${-pi/2}" xyz="0 0 0"/> -->
     <material name="grey"/>
   </visual>
   <collision>
     <geometry>
-      <cylinder radius="${actuator_diameter}" length="${actuator_total_width}"/>
+      <cylinder radius="${actuator_diameter/2+Connector1_L}" length="${actuator_total_width}"/>
     </geometry>
-    <origin rpy="${pi/2} 0 ${-pi/2}" xyz="0 0 0"/>
+    <origin rpy="${pi/2} 0 0" xyz="0  ${actuator_midplane_origin_offset/2} 0"/>
   </collision>
   <xacro:default_inertial mass="10" xl="1" yl="1" zl="1">
     <origin rpy="0 0 0" xyz="0 0 0" />
@@ -123,6 +130,7 @@
     </joint>
   </transmission>
 
+
 <!-- Link 2  -->
 <link name="link2">
   <visual>
@@ -134,9 +142,9 @@
   </visual>
   <collision>
     <geometry>
-      <cylinder radius="${actuator_diameter}" length="${actuator_total_width}"/>
+      <cylinder radius="0.025" length="${link2_3D}"/>
     </geometry>
-    <origin rpy="${pi/2} 0 ${-pi/2}" xyz="0 0 0"/>
+    <origin rpy="0 ${pi/2} 0" xyz="${link2_3D /2} 0 0"/>
   </collision>
   <xacro:default_inertial mass="10" xl="1" yl="1" zl="1">
     <origin rpy="0 0 0" xyz="0 0 0" />
@@ -169,11 +177,17 @@
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <material name="grey"/>
   </visual>
-  <collision>
+  <collision name="link3_leg">
     <geometry>
-      <cylinder radius="${actuator_diameter}" length="${actuator_total_width}"/>
+      <cylinder radius="0.025" length="${link3_ED- (footD/2) }"/>
     </geometry>
-    <origin rpy="${pi/2} 0 ${-pi/2}" xyz="0 0 0"/>
+    <origin rpy="0 ${pi/2} 0" xyz="${( link3_ED- footD/2 )/2  } 0 0"/>
+  </collision>
+  <collision name="link3_foot">
+    <geometry>
+      <sphere radius="${footD/2}"/>
+    </geometry>
+    <origin rpy="0 0 0" xyz="${ link3_ED- footD/2  } 0 0"/>
   </collision>
   <xacro:default_inertial mass="10" xl="1" yl="1" zl="1">
     <origin rpy="0 0 0" xyz="0 0 0" />
