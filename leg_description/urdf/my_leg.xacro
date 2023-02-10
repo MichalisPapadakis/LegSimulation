@@ -21,19 +21,19 @@
 <!-- Defining macros -->
 <xacro:property name="BaseHeight" value="0.5" />
 
+<!-- Lengths -->
+<xacro:property name="LB0" value="0.05555" />
+<xacro:property name="L01" value="0.07763" />
+<xacro:property name="L12" value="0.11208" />
+<xacro:property name="L23" value="0.2531" />
+<xacro:property name="L3E" value="0.248" />
+
 <!-- Connectors -->
 <xacro:property name="connectorL_1" value="0.004" />
-<xacro:property name="connectorL_2" value="0.030" />
-
 <!-- Hip -->
 <xacro:property name="hipW" value="0.045" />
-
-<!-- Knee -->
-<xacro:property name="knee_gearD" value="0.05" />
-
-<!-- foot -->
-<xacro:property name="legD" value="0.045" />
-
+<!-- leg -->
+<xacro:property name="legD" value="0.041" />
 
 <!-- Actuator -->
 <xacro:property name="actuator_nudge" value="0.00666" />
@@ -41,32 +41,21 @@
 <xacro:property name="actuator_total_width" value="0.05708" />
 <xacro:property name="actuator_diameter" value="0.1031" />
 
+<!-- Generated Quantities -->
+<!-- AMOO = "actuator_midplane_origin_offset" -->
+<xacro:property name="AMOO" value="${(actuator_total_width-actuator_cylinder_width)/2}" />
+<xacro:property name="link1_total_length" value="${-hipW/2 + L12 + actuator_total_width-(actuator_cylinder_width/2+actuator_nudge)}" />
+<xacro:property name="link1_total_mid_originL" value="${link1_total_length/2 - ( actuator_total_width - actuator_cylinder_width/2 - actuator_nudge) }" />
+
+
+
+
 <!-- Actuator Limits -->
 <xacro:property name="velocity_limit" value="398" />
 
 <xacro:property name="maxCurrent" value="13.36" />
 <xacro:property name="motorConstantKt" value="0.8" />
-
-
 <xacro:property name="effort_limit" value="${maxCurrent*motorConstantKt}" />
-
-<!-- Generated Quantities -->
-<xacro:property name="actuator_midplane_origin_offset" value="${(actuator_total_width-actuator_cylinder_width)/2}" />
-<!-- "actuator_offset_from_peripheral_connector" -> AOFPC -->
-<xacro:property name="AOFPC" value="${actuator_diameter/2+connectorL_1}" />
-<xacro:property name="actuator3_wt_connectorL" value="${actuator_cylinder_width+connectorL_2+actuator_nudge}" />
-
-
-<!-- Link2 -->
-<xacro:property name="link1_2D" value="0.089" />
-
-<!-- Link3 -->
-<xacro:property name="link2_3D" value="0.337" />
-<xacro:property name="link3_angle_limit" value="2.15" />
-<xacro:property name="link3_ED" value="0.369" />
-<xacro:property name="footD" value="0.050" />
-
-
 
 <!-- Moment of inertia -->
 <xacro:macro name="default_inertial" params="mass xl yl zl *Dorigin">
@@ -97,17 +86,25 @@
     <geometry>
       <cylinder radius="${actuator_diameter/2+connectorL_1}" length="${actuator_total_width}"/>
     </geometry>
-    <origin rpy="0 0 0" xyz="0 0 ${-actuator_midplane_origin_offset/2}"/>
+    <origin rpy="0 0 0" xyz="0 0 ${AMOO/2}"/>
   </collision>
-  <xacro:default_inertial mass="10" xl="1" yl="1" zl="1">
-    <origin rpy="0 0 0" xyz="0 0 0" />
-  </xacro:default_inertial>
+  <inertial>
+    <mass value="1.14058" />
+    <inertia 
+    ixx="0.000576572" 
+    ixy="-1.091449e-05" 
+    ixz="4.096e-06"
+    iyy="0.000825053" 
+    iyz="3.018e-06"
+    izz="0.000391889" />
+    <origin rpy="0 0 0" xyz="-0.00083 -0.00061 0.01032" />
+  </inertial>
 </link>
 
- <joint name="world_joint" type="fixed">
+<joint name="world_joint" type="fixed">
   <parent link="world"/>
   <child link="base_link"/>
-  <origin rpy="${pi/2} ${-pi/2} 0" xyz="${AOFPC} 0 ${BaseHeight}"/>
+  <origin rpy="${pi/2} ${-pi/2} 0" xyz="${LB0} 0 ${BaseHeight}"/>
 </joint>   
 
 <!-- Link 1  -->
@@ -121,13 +118,21 @@
   </visual>
   <collision>
     <geometry>
-      <cylinder radius="${actuator_diameter/2+connectorL_1}" length="${actuator_total_width}"/>
+      <cylinder radius="${actuator_diameter/2+connectorL_1}" length="${link1_total_length}"/>
     </geometry>
-    <origin rpy="${pi/2} 0 0" xyz="0  ${actuator_midplane_origin_offset/2} 0"/>
+    <origin rpy="${pi/2} 0 0" xyz="0  ${-link1_total_mid_originL} 0"/>
   </collision>
-  <xacro:default_inertial mass="10" xl="1" yl="1" zl="1">
-    <origin rpy="0 0 0" xyz="0 0 0" />
-  </xacro:default_inertial>
+  <inertial>
+    <mass value="1.14058" />
+    <inertia 
+    ixx="0.000576572" 
+    ixy="-1.091449e-05" 
+    ixz="4.096e-06"
+    iyy="0.000825053" 
+    iyz="3.018e-06"
+    izz="0.000391889" />
+    <origin rpy="0 0 0" xyz="-0.00083 -0.00061 0.01032" />
+  </inertial>
 </link>
 
 <joint name="base_to_link1" type="revolute"> 
@@ -135,7 +140,7 @@
   <child link="link1"/>
   <axis rpy = "0 0 0" xyz="0 0 1"/>
   <limit lower="${-pi/2}" upper="${pi/2}" effort="${effort_limit}" velocity="${velocity_limit}" />
-  <origin rpy = "0 0 0" xyz="0 0 ${-(actuator_cylinder_width/2+actuator_nudge +AOFPC)}"/>
+  <origin rpy = "0 0 0" xyz="0 0 ${-L01}"/>
 </joint>  
 
 <transmission name="base_link1_trans">
@@ -146,7 +151,7 @@
     <joint name="base_to_link1">
       <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
     </joint>
-  </transmission>
+</transmission>
 
 <!-- Link 2  -->
 <link name="link2">
@@ -159,26 +164,34 @@
   </visual>
   <collision name="link2_leg">
     <geometry>
-      <cylinder radius="${legD/2}" length="${link2_3D}"/>
+      <cylinder radius="${legD/2}" length="${L23}"/>
     </geometry>
-    <origin rpy="0 ${pi/2} 0" xyz="${link2_3D /2} 0 0"/>
+    <origin rpy="0 ${pi/2} 0" xyz="${L23/2} 0 0"/>
   </collision>
-  <collision name="link2_unit">
+  <!-- <collision name="link2_unit">
     <geometry>
       <cylinder radius="${actuator_diameter/2+connectorL_1}" length="${hipW+actuator3_wt_connectorL}"/>
     </geometry>
     <origin rpy="0 0 0" xyz="0 0 ${-(actuator3_wt_connectorL/2)}"/>
-  </collision>
-  <xacro:default_inertial mass="10" xl="1" yl="1" zl="1">
-    <origin rpy="0 0 0" xyz="0 0 0" />
-  </xacro:default_inertial>
+  </collision> -->
+  <inertial>
+    <mass value="0.94987" />
+    <inertia 
+    ixx="0.001561735" 
+    ixy="1.2537e-05" 
+    ixz="0.000843757"
+    iyy="0.005174717" 
+    iyz="1.72e-05"
+    izz="0.004776989" />
+    <origin rpy="0 0 0" xyz="0.03158 -0.00042 -0.02813" />
+  </inertial>
 </link>
 
 <joint name="link1_to_link2" type="continuous"> 
   <parent link="link1"/>
   <child link="link2"/>
   <axis rpy = "0 0 0" xyz="0 0 1"/>
-  <origin rpy = "${pi/2} ${pi/2} 0" xyz="0 ${-(  actuator_cylinder_width/2+actuator_nudge +link1_2D)}  0"/>
+  <origin rpy = "${pi/2} ${pi/2} 0" xyz="0 ${-L12}  0"/>
 </joint> 
 
 <transmission name="link1_link2_trans">
@@ -191,56 +204,6 @@
     </joint>
   </transmission>
 
-  <!-- Link 3  -->
-<link name="link3">
-  <visual>
-    <geometry>      
-        <mesh scale=".001 .001 .001" filename="package://leg_description/meshes/link3.STL" />
-    </geometry>
-    <origin rpy="0 0 0" xyz="0 0 0"/>
-    <material name="grey"/>
-  </visual>
-  <collision name="link3_leg">
-    <geometry>
-      <cylinder radius="${legD/2}" length="${link3_ED- (footD/2) }"/>
-    </geometry>
-    <origin rpy="0 ${pi/2} 0" xyz="${( link3_ED- footD/2 )/2  } 0 0"/>
-  </collision>
-  <collision name="link3_knee">
-    <geometry>
-      <cylinder radius="${knee_gearD/2}" length="${legD }"/>    
-    </geometry>
-    <origin rpy="0 0 0" xyz="0 0 0"/>
-  </collision>
-  <collision name="link3_foot">
-    <geometry>
-      <sphere radius="${footD/2}"/>
-    </geometry>
-    <origin rpy="0 0 0" xyz="${ link3_ED- footD/2  } 0 0"/>
-  </collision>
-  <xacro:default_inertial mass="10" xl="1" yl="1" zl="1">
-    <origin rpy="0 0 0" xyz="${link3_ED/2} 0 0" />
-  </xacro:default_inertial>
-</link>
-
-<joint name="link2_to_link3" type="revolute"> 
-  <parent link="link2"/>
-  <child link="link3"/>
-  <axis rpy = "0 0 0" xyz="0 0 1"/>
-  <origin rpy = "0 0 0" xyz="${link2_3D} 0  0"/>
-  <limit lower="${-link3_angle_limit}" upper="${link3_angle_limit}" effort="${effort_limit}" velocity="${velocity_limit}" />
-
-</joint> 
-
-<transmission name="link2_link3_trans">
-    <type>transmission_interface/SimpleTransmission</type>
-    <actuator name="$motor3">
-      <mechanicalReduction>10</mechanicalReduction>
-    </actuator>
-    <joint name="link2_to_link3">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-    </joint>
-  </transmission>
 
 <!-- Gazebo -->
 <gazebo> 
@@ -248,6 +211,5 @@
       <robotNamespace>/leg</robotNamespace>
     </plugin>
 </gazebo>
-
 
 </robot>
