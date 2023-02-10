@@ -19,21 +19,31 @@
 </material>
 
 <!-- Defining macros -->
-<xacro:property name="BaseHeight" value="0.5" />
+<xacro:property name="BaseHeight" value="0.4" />
 
 <!-- Lengths -->
 <xacro:property name="LB0" value="0.05555" />
 <xacro:property name="L01" value="0.07763" />
 <xacro:property name="L12" value="0.11208" />
 <xacro:property name="L23" value="0.2531" />
-<xacro:property name="L3E" value="0.248" />
+<xacro:property name="L3E" value="0.2455" />
 
 <!-- Connectors -->
 <xacro:property name="connectorL_1" value="0.004" />
 <!-- Hip -->
 <xacro:property name="hipW" value="0.045" />
+<xacro:property name="hipH" value="0.128" />
+<xacro:property name="hipSide" value="0.07" />
+<xacro:property name="hip_center_origin_L" value="0.028" />
+<!-- Knee -->
+<xacro:property name="knee_gearD" value="0.05" />
+
 <!-- leg -->
 <xacro:property name="legD" value="0.041" />
+
+<!-- Link3 -->
+<xacro:property name="link3_angle_limit" value="2.229" />
+<xacro:property name="footD" value="0.045" />
 
 <!-- Actuator -->
 <xacro:property name="actuator_nudge" value="0.00666" />
@@ -168,12 +178,12 @@
     </geometry>
     <origin rpy="0 ${pi/2} 0" xyz="${L23/2} 0 0"/>
   </collision>
-  <!-- <collision name="link2_unit">
+  <collision name="link2_hip">
     <geometry>
-      <cylinder radius="${actuator_diameter/2+connectorL_1}" length="${hipW+actuator3_wt_connectorL}"/>
+      <box size="${hipH} ${hipSide} ${hipW}" />
     </geometry>
-    <origin rpy="0 0 0" xyz="0 0 ${-(actuator3_wt_connectorL/2)}"/>
-  </collision> -->
+    <origin rpy="0 0 0" xyz="${hip_center_origin_L} 0 0"/>
+  </collision>
   <inertial>
     <mass value="0.94987" />
     <inertia 
@@ -193,6 +203,66 @@
   <axis rpy = "0 0 0" xyz="0 0 1"/>
   <origin rpy = "${pi/2} ${pi/2} 0" xyz="0 ${-L12}  0"/>
 </joint> 
+
+  <!-- Link 3  -->
+<link name="link3">
+  <visual>
+    <geometry>      
+        <mesh scale=".001 .001 .001" filename="package://leg_description/meshes/link3.STL" />
+    </geometry>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <material name="grey"/>
+  </visual>
+  <collision name="link3_leg">
+    <geometry>
+      <cylinder radius="${legD/2}" length="${L3E- (footD/2) }"/>
+    </geometry>
+    <origin rpy="0 ${pi/2} 0" xyz="${(L3E- (footD/2) )/2  } 0 0"/>
+  </collision>
+  <collision name="link3_knee">
+    <geometry>
+      <cylinder radius="${knee_gearD/2}" length="${legD }"/>    
+    </geometry>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+  </collision>
+  <collision name="link3_foot">
+    <geometry>
+      <sphere radius="${footD/2}"/>
+    </geometry>
+    <origin rpy="0 0 0" xyz="${ L3E- footD/2  } 0 0"/>
+  </collision>
+  <inertial>
+    <mass value="0.36814" />
+    <inertia 
+    ixx="8.8159e-05" 
+    ixy="0" 
+    ixz="0"
+    iyy="0.003793802" 
+    iyz="0"
+    izz="0.003804351" />
+    <origin rpy="0 0 0" xyz="0.10653 0 0" />
+  </inertial>
+</link>
+
+<joint name="link2_to_link3" type="revolute"> 
+  <parent link="link2"/>
+  <child link="link3"/>
+  <axis rpy = "0 0 0" xyz="0 0 1"/>
+  <origin rpy = "0 0 0" xyz="${L23} 0  0"/>
+  <limit lower="${-link3_angle_limit}" upper="${link3_angle_limit}" effort="${effort_limit}" velocity="${velocity_limit}" />
+
+</joint> 
+
+<transmission name="link2_link3_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <actuator name="$motor3">
+      <mechanicalReduction>10</mechanicalReduction>
+    </actuator>
+    <joint name="link2_to_link3">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+  </transmission>
+
 
 <transmission name="link1_link2_trans">
     <type>transmission_interface/SimpleTransmission</type>
