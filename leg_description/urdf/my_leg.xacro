@@ -141,7 +141,7 @@
 
 <transmission name="base_link1_trans">
     <type>transmission_interface/SimpleTransmission</type>
-    <actuator name="$motor1">
+    <actuator name="motor1">
       <mechanicalReduction>7</mechanicalReduction>
     </actuator>
     <joint name="base_to_link1">
@@ -192,7 +192,7 @@
 
 <transmission name="link1_link2_trans">
     <type>transmission_interface/SimpleTransmission</type>
-    <actuator name="$motor2">
+    <actuator name="motor2">
       <mechanicalReduction>10</mechanicalReduction>
     </actuator>
     <joint name="link1_to_link2">
@@ -251,7 +251,7 @@
 
 <transmission name="link2_link3_trans">
     <type>transmission_interface/SimpleTransmission</type>
-    <actuator name="$motor3">
+    <actuator name="motor3">
       <mechanicalReduction>10</mechanicalReduction>
     </actuator>
     <joint name="link2_to_link3">
