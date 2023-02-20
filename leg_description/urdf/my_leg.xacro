@@ -57,26 +57,12 @@
 <xacro:property name="link1_total_length" value="${-hipW/2 + L12 + actuator_total_width-(actuator_cylinder_width/2+actuator_nudge)}" />
 <xacro:property name="link1_total_mid_originL" value="${link1_total_length/2 - ( actuator_total_width - actuator_cylinder_width/2 - actuator_nudge) }" />
 
-
-
-
 <!-- Actuator Limits -->
-<xacro:property name="velocity_limit" value="398" />
+<xacro:property name="velocity_limit" value="388.4" />
 
 <xacro:property name="maxCurrent" value="13.36" />
-<xacro:property name="motorConstantKt" value="0.8" />
+<xacro:property name="motorConstantKt" value="0.0754" />
 <xacro:property name="effort_limit" value="${maxCurrent*motorConstantKt}" />
-
-<!-- Moment of inertia -->
-<xacro:macro name="default_inertial" params="mass xl yl zl *Dorigin">
-    <inertial>
-            <mass value="${mass}" />
-            <inertia ixx="${ mass * ( yl*yl + zl*zl ) / 12 }" ixy="0.0" ixz="0.0"
-                     iyy="${ mass * ( xl*xl + zl*zl ) / 12 }" iyz="0.0"
-                     izz="${ mass * ( yl*yl + xl*xl ) / 12 }" />
-            <xacro:insert_block name="Dorigin" />
-    </inertial>
-</xacro:macro>
 
 
 <!-- Addin objects: -->
@@ -133,13 +119,13 @@
     <origin rpy="${pi/2} 0 0" xyz="0  ${-link1_total_mid_originL} 0"/>
   </collision>
   <inertial>
-    <mass value="1.14058" />
+    <mass value="0.4759" />
     <inertia 
     ixx="0.000576572" 
-    ixy="-1.091449e-05" 
-    ixz="4.096e-06"
+    ixy="1.091449e-05" 
+    ixz="-4.096e-06"
     iyy="0.000825053" 
-    iyz="3.018e-06"
+    iyz="-3.018e-06"
     izz="0.000391889" />
     <origin rpy="0 0 0" xyz="-0.00083 -0.00061 0.01032" />
   </inertial>
@@ -188,10 +174,10 @@
     <mass value="0.94987" />
     <inertia 
     ixx="0.001561735" 
-    ixy="1.2537e-05" 
-    ixz="0.000843757"
+    ixy="-1.2537e-05" 
+    ixz="-0.000843757"
     iyy="0.005174717" 
-    iyz="1.72e-05"
+    iyz="-1.72e-05"
     izz="0.004776989" />
     <origin rpy="0 0 0" xyz="0.03158 -0.00042 -0.02813" />
   </inertial>
@@ -204,7 +190,17 @@
   <origin rpy = "${pi/2} ${pi/2} 0" xyz="0 ${-L12}  0"/>
 </joint> 
 
-  <!-- Link 3  -->
+<transmission name="link1_link2_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <actuator name="$motor2">
+      <mechanicalReduction>10</mechanicalReduction>
+    </actuator>
+    <joint name="link1_to_link2">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+</transmission>
+  
+<!-- Link 3  -->
 <link name="link3">
   <visual>
     <geometry>      
@@ -261,19 +257,7 @@
     <joint name="link2_to_link3">
       <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
     </joint>
-  </transmission>
-
-
-<transmission name="link1_link2_trans">
-    <type>transmission_interface/SimpleTransmission</type>
-    <actuator name="$motor2">
-      <mechanicalReduction>10</mechanicalReduction>
-    </actuator>
-    <joint name="link1_to_link2">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-    </joint>
-  </transmission>
-
+</transmission>
 
 <!-- Gazebo -->
 <gazebo> 
