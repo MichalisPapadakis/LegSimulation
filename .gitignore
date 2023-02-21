@@ -1,2 +1,2 @@
 .vscode
-urdf/my_leg_cylinder_i_did_tests.xacro
+leg_description/urdf/my_leg_cylinder_i_did_tests.xacro
