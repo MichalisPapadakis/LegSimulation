@@ -64,6 +64,10 @@
 <xacro:property name="motorConstantKt" value="0.0754" />
 <xacro:property name="effort_limit" value="${maxCurrent*motorConstantKt}" />
 
+<!-- Gear Reductions -->
+<xacro:property name="kr1" value="7" />
+<xacro:property name="kr2" value="10" />
+<xacro:property name="kr3" value="10" />
 
 <!-- Addin objects: -->
 
@@ -85,13 +89,13 @@
     <origin rpy="0 0 0" xyz="0 0 ${AMOO/2}"/>
   </collision>
   <inertial>
-    <mass value="1.14058" />
+    <mass value="0.4759" />
     <inertia 
     ixx="0.000576572" 
-    ixy="-1.091449e-05" 
-    ixz="4.096e-06"
+    ixy="1.091449e-05" 
+    ixz="-4.096e-06"
     iyy="0.000825053" 
-    iyz="3.018e-06"
+    iyz="-3.018e-06"
     izz="0.000391889" />
     <origin rpy="0 0 0" xyz="-0.00083 -0.00061 0.01032" />
   </inertial>
@@ -135,14 +139,14 @@
   <parent link="base_link"/>
   <child link="link1"/>
   <axis rpy = "0 0 0" xyz="0 0 1"/>
-  <limit lower="${-pi/2}" upper="${pi/2}" effort="${effort_limit}" velocity="${velocity_limit}" />
+  <limit lower="${-pi/2}" upper="${pi/2}" effort="${effort_limit*kr1}" velocity="${velocity_limit/kr1}" />
   <origin rpy = "0 0 0" xyz="0 0 ${-L01}"/>
 </joint>  
 
 <transmission name="base_link1_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <actuator name="motor1">
-      <mechanicalReduction>7</mechanicalReduction>
+      <mechanicalReduction>${kr1}</mechanicalReduction>
     </actuator>
     <joint name="base_to_link1">
       <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
@@ -188,12 +192,13 @@
   <child link="link2"/>
   <axis rpy = "0 0 0" xyz="0 0 1"/>
   <origin rpy = "${pi/2} ${pi/2} 0" xyz="0 ${-L12}  0"/>
+  <limit effort="${effort_limit*kr2}" velocity="${velocity_limit/kr2}" />
 </joint> 
 
 <transmission name="link1_link2_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <actuator name="motor2">
-      <mechanicalReduction>10</mechanicalReduction>
+      <mechanicalReduction>${kr2}</mechanicalReduction>
     </actuator>
     <joint name="link1_to_link2">
       <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
@@ -245,19 +250,25 @@
   <child link="link3"/>
   <axis rpy = "0 0 0" xyz="0 0 1"/>
   <origin rpy = "0 0 0" xyz="${L23} 0  0"/>
-  <limit lower="${-link3_angle_limit}" upper="${link3_angle_limit}" effort="${effort_limit}" velocity="${velocity_limit}" />
+  <limit lower="${-link3_angle_limit}" upper="${link3_angle_limit}" effort="${effort_limit*kr3}" velocity="${velocity_limit/kr3}" />
 
 </joint> 
 
 <transmission name="link2_link3_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <actuator name="motor3">
-      <mechanicalReduction>10</mechanicalReduction>
+      <mechanicalReduction>${kr3}</mechanicalReduction>
     </actuator>
     <joint name="link2_to_link3">
       <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
     </joint>
 </transmission>
+
+<!-- Gazebo references -->
+<gazebo reference="base_link" >
+  <material> Gazebo/Blue </material>
+  <kinematic> true </kinematic>
+</gazebo>
 
 <!-- Gazebo -->
 <gazebo> 

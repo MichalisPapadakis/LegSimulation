@@ -7,13 +7,17 @@
 
 <!-- PARAMETERS -->
 <param name="robot_description" command="$(find xacro)/xacro $(arg model)" />
-<rosparam file="$(find leg_description)/launch/controller.yaml" command="load"/>
+<rosparam file="$(find leg_description)/launch/posControl.yaml" command="load"/>
 
 <!-- NODES -->
 <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizConfig)"/>
 
 <node name="LegController" pkg="controller_manager" type="spawner" respawn="false"
-	output="screen" ns="/leg" args="joint_state_controller" />
+	output="screen" ns="/leg" 
+    args="joint_state_controller 
+    joint1_position_controller
+    joint2_position_controller
+    joint3_position_controller" />
 
 <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" >
     <remap from="/joint_states" to="/leg/joint_states"/>
@@ -27,11 +31,12 @@
     <arg name="debug" value="false" />
     <arg name="gui" value="true" />
     <arg name="paused" value="true"/>
+    <arg name="verbose" value="true"/>
     <arg name="use_sim_time" value="true"/>
 </include>
 
 <node name="RobotSpawner" pkg="gazebo_ros" type="spawn_model"
-        args="-unpause -urdf -model robot -param robot_description" respawn="false" output="screen" />
+        args=" -urdf -model robot -param robot_description" respawn="false" output="screen" />
 
 <!-- Static transform -->
 <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="end_effector_broadcaster" args="$(arg half_width) 0 0 0 0 0 1 end_effector_link end_effector" /> -->
