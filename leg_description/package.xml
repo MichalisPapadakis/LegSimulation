@@ -61,8 +61,13 @@
 <!-- For ROS-CONTROL -->
   <exec_depend>ros_control</exec_depend>
   <exec_depend>controller_manager</exec_depend>
+
   <!-- package required to have installed -->
   <depend>effort_controllers</depend> 
+  <depend>control_msgs</depend> 
+  <depend>std_msgs</depend> 
+
+
 
 <!-- Publishing states of the robot -->
   <exec_depend>robot_state_publisher</exec_depend>
