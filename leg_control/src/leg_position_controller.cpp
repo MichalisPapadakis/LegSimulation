@@ -1,7 +1,7 @@
 #include <ros/ros.h>
 #include <std_msgs/Float64.h>
 #include <control_msgs/JointControllerState.h>
-#include "leg_kinematics.hpp"
+#include "leg_kinematics/leg_kinematics.hpp"
 
 
 class PositionController: public LegKinematics {
@@ -242,16 +242,7 @@ void PoseCallback3(const control_msgs::JointControllerState::ConstPtr& msg){
 //   double L23 = 0.2531;
 //   double L3E = 0.2455;
 //   double H = 0.4;
-
-//   // states
-//   double q1 ,q2 ,q3;
-
-//   //desired states:
-//   double x0, y0, z0; //positions in the 0th frame
-//   double xw, yw, zw; //positions in the world frame
-
-//   double SOLS[3][4]; // 4 solutions maximum;
-//   int nSols;    
+   
 
   double q1d,q2d,q3d; // the selected from the solution set solutions
   

@@ -1,0 +1,5 @@
+Float32 xw
+Float32 yw
+Float32 zw
+---
+bool feasible 

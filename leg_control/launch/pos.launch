@@ -1,13 +1,13 @@
 <launch>
 
 <!-- ARGS -->
-<arg name="rvizConfig" default="$(find leg_description)/rvizConfigs/config1.rviz" />
+<arg name="rvizConfig" default="$(find leg_control)/rvizConfigs/config1.rviz" />
 <arg name="model"      default="$(find leg_description)/urdf/my_leg.xacro" />  
 <!-- <arg name="half_width"      default="0.1" /> -->
 
 <!-- PARAMETERS -->
 <param name="robot_description" command="$(find xacro)/xacro $(arg model)" />
-<rosparam file="$(find leg_description)/launch/posControl.yaml" command="load"/>
+<rosparam file="$(find leg_control)/launch/posControl.yaml" command="load"/>
 
 <!-- NODES -->
 <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizConfig)"/>
@@ -42,7 +42,7 @@
 <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="end_effector_broadcaster" args="$(arg half_width) 0 0 0 0 0 1 end_effector_link end_effector" /> -->
 
 <!-- High Level Controller -->
-<node name="HLcontroller" pkg="leg_description" type="leg_position_controller" output="screen" >
+<node name="HLcontroller" pkg="leg_control" type="leg_position_controller" output="screen" >
     <!-- <rosparam file="$(find leg_description)/launch/robot.yaml" command="load" /> -->
 </node>
 
