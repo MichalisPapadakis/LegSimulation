@@ -120,9 +120,11 @@ include_directories(
 )
 
 ## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/leg_description.cpp
-# )
+add_library(leg_kinematics STATIC
+  lib/leg_kinematics.cpp
+)
+target_include_directories(leg_kinematics PUBLIC lib/leg_kinematics)
+target_link_libraries(leg_kinematics ${catkin_LIBRARIES} )
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -145,7 +147,7 @@ add_executable(leg_position_controller src/leg_position_controller.cpp)
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(leg_position_controller ${catkin_LIBRARIES} )
+target_link_libraries(leg_position_controller PUBLIC ${catkin_LIBRARIES}  leg_kinematics )
 
 #############
 ## Install ##
