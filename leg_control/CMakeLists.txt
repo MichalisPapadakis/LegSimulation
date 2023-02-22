@@ -9,7 +9,9 @@ project(leg_control)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   gazebo_ros
+  roscpp
   leg_description
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -52,12 +54,13 @@ find_package(catkin REQUIRED COMPONENTS
 #   Message2.msg
 # )
 
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+# Generate services in the 'srv' folder
+add_service_files(
+  FILES
+  pos.srv
+  # Service1.srv
+  # Service2.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -66,11 +69,11 @@ find_package(catkin REQUIRED COMPONENTS
 #   Action2.action
 # )
 
-## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+# Generate added messages and services with any dependencies listed here
+generate_messages(
+  DEPENDENCIES
+  std_msgs  # Or other packages containing msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -104,7 +107,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES leg_control
-#  CATKIN_DEPENDS gazebo_ros leg_description ros_control roscpp
+#  CATKIN_DEPENDS message_generation gazebo_ros leg_description ros_control roscpp
 #  DEPENDS system_lib
 )
 
@@ -133,6 +136,7 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(leg_position_controller src/leg_position_controller.cpp)
+add_executable(leg_goal_set src/leg_goal_set.cpp)
 
 
 ## Rename C++ executable without prefix
@@ -147,6 +151,7 @@ add_executable(leg_position_controller src/leg_position_controller.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(leg_position_controller ${catkin_LIBRARIES}   )
+target_link_libraries(leg_goal_set ${catkin_LIBRARIES}   )
 
 #############
 ## Install ##

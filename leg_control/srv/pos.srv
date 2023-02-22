@@ -1,5 +1,5 @@
-Float32 xw
-Float32 yw
-Float32 zw
+float32 xw
+float32 yw
+float32 zw
 ---
 bool feasible 

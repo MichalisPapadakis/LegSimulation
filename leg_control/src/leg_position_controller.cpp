@@ -2,6 +2,7 @@
 #include <std_msgs/Float64.h>
 #include <control_msgs/JointControllerState.h>
 #include "leg_kinematics/leg_kinematics.hpp"
+#include "leg_control/pos.h"
 
 
 class PositionController: public LegKinematics {
@@ -38,8 +39,8 @@ PositionController(): q1d(0), q2d(0), q3d(0) {
     zw = H;
 
     //Set up goal server
-    // ros::NodeHandle GoalServerHandle = ros::NodeHandle();
-    // GoalServer = GoalServerHandle.advertiseService("GoalSet",&PositionController::setTarget, this);
+    ros::NodeHandle GoalServerHandle;
+    GoalServer = GoalServerHandle.advertiseService("GoalSet",&PositionController::setTarget, this);
 
     //Set up command publishers
     ros::NodeHandle n11;
@@ -64,27 +65,55 @@ PositionController(): q1d(0), q2d(0), q3d(0) {
 
 }
 
-bool getValid(){
-  return isValid;
-}
+bool setTarget(leg_control::pos::Request &req, leg_control::pos::Response &res){
 
-void loop(){
-  
-  //Callbacks (get new destination, get new positions)
-  ros::spinOnce();
+  xw = req.xw;
+  yw = req.yw;
+  zw = req.zw;
 
-    // will be changed
-    q1m.data = 0;
-    q2m.data = 0;
-    q3m.data = 0;
-   
-    ROS_INFO_STREAM("States: q1 = "<< q1 <<", q2 = "<< q2 <<", q3 = "<< q3 <<"\n" );
-    //
+  ROS_INFO("[High Level Controller] Asking New Goal: xwd = %f, ywd = %f, zwd = %f \n",xw,yw,zw);
+
+
+  //Call the Inverse Kinematics function to calculate new joint variables.
+  if( ! IK() ){
+    ROS_WARN_STREAM("[High Level Controller] Goal out of reach");
+    res.feasible = false;
+    return false;
+  }
+
+  PublishTarget();
+  res.feasible = true;
+  return true;
+};
+
+void PublishTarget(){
+
+  ROS_INFO_STREAM("[High Level Controller]  Current States: q1 = "<< q1 <<", q2 = "<< q2 <<", q3 = "<< q3 <<"\n" );
+
+  double Qdistbest = 10000;
+  double Qdist; //Distance in the joint space
+  // will select the configuration with the minimum joint space distance
+  int is=0; //index of sol
+
+  for (int i=0;i<nSols ; i++){
+    Qdist = pow(SOLS[0][i] - q1,2)+pow(SOLS[1][i] - q2,2)+pow(SOLS[2][i] - q3,2);
+    if (Qdist < Qdistbest){ Qdistbest = Qdist; is = i;}
+  }
+
+  // will be 
+  q1m.data = SOLS[0][is];
+  q2m.data = SOLS[1][is];
+  q3m.data = SOLS[2][is];
   
+  ROS_INFO_STREAM("[High Level Controller]  Desired States: q1 = "<< q1m.data <<", q2 = "<< q2m.data <<", q3 = "<< q3m.data <<"\n" );
+
   Joint1_command.publish(q1m);
   Joint2_command.publish(q2m);
   Joint3_command.publish(q3m);
+}
 
+bool getValid(){
+  return isValid;
 }
 
 //For testing
@@ -235,14 +264,6 @@ void PoseCallback3(const control_msgs::JointControllerState::ConstPtr& msg){
   
 // Class variables
 #pragma region
-//  // geometry
-//   double LB0 = 0.05555;
-//   double L01 = 0.07763;
-//   double L12 = 0.11208;
-//   double L23 = 0.2531;
-//   double L3E = 0.2455;
-//   double H = 0.4;
-   
 
   double q1d,q2d,q3d; // the selected from the solution set solutions
   
@@ -252,6 +273,8 @@ void PoseCallback3(const control_msgs::JointControllerState::ConstPtr& msg){
   //logic flag
   bool isValid;  
   
+  ros::ServiceServer GoalServer;
+
   ros::Publisher Joint1_command;
   ros::Publisher Joint2_command;
   ros::Publisher Joint3_command;
@@ -277,18 +300,19 @@ int main(int argc, char **argv){
   while (ros::ok())
   {
 
-    ROS_INFO_STREAM("matlab inputs: q1 = 0,q2 =0 ,q3=0 \n"); 
-    PC.setXYZ(0.16763,0.5762294,0.40);
+    // ROS_INFO_STREAM("matlab inputs: q1 = 0,q2 =0 ,q3=0 \n"); 
+    // PC.setXYZ(0.16763,0.5762294,0.40);
 
-    ROS_INFO_STREAM("matlab inputs: q1 = 1,q2 =1 ,q3=-1 \n"); 
-    PC.setXYZ(-0.0631,0.4599,0.6094);
+    // ROS_INFO_STREAM("matlab inputs: q1 = 1,q2 =1 ,q3=-1 \n"); 
+    // PC.setXYZ(-0.0631,0.4599,0.6094);
 
-    ROS_INFO_STREAM("matlab inputs: q1 = 0.5,q2 =0.3 ,q3=0.4 \n"); 
-    PC.setXYZ(0.0422265,0.5071944,0.658168);
+    // ROS_INFO_STREAM("matlab inputs: q1 = 0.5,q2 =0.3 ,q3=0.4 \n"); 
+    // PC.setXYZ(0.0422265,0.5071944,0.658168);
 
-    ROS_INFO_STREAM("matlab inputs: q1 = 1.3,q2 =-0.3 ,q3=1.4 \n"); 
-    PC.setXYZ(-0.0532165,0.4307835,0.546514);
+    // ROS_INFO_STREAM("matlab inputs: q1 = 1.3,q2 =-0.3 ,q3=1.4 \n"); 
+    // PC.setXYZ(-0.0532165,0.4307835,0.546514);
     // PC.loop();
+    ros::spinOnce(); // for callbacks
     loop_rate.sleep();
 
   }
