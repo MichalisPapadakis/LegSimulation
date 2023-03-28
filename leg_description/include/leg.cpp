@@ -4,6 +4,45 @@
 exIK::exIK(const std::string& str):
     ros::Exception::Exception(str) {}
 
+void Leg::init(){
+    //Set up state subsribers
+    ros::NodeHandle n12;
+    Joint1_pos = n12.subscribe("/leg/joint1_position_controller/state",1000,&Leg::PoseCallback1,this);
+
+    ros::NodeHandle n22;
+    Joint2_pos = n22.subscribe("/leg/joint2_position_controller/state",1000,&Leg::PoseCallback2,this);
+
+    ros::NodeHandle n32;
+    Joint3_pos = n32.subscribe("/leg/joint2_position_controller/state",1000,&Leg::PoseCallback3,this);
+
+}
+
+void Leg::Querry_state(){
+    ROS_INFO_STREAM("[Leg: ]  Current States: q1 = "<< q(0) <<", q2 = "<< q(1) <<", q3 = "<< q(2) <<"\n" );
+};
+//Callback function to be changed
+#pragma region
+void Leg::PoseCallback1(const control_msgs::JointControllerState::ConstPtr& msg) {
+   q(0) = msg->process_value; 
+}
+
+void Leg::PoseCallback2(const control_msgs::JointControllerState::ConstPtr& msg){
+   q(1) = msg->process_value; 
+}
+
+void Leg::PoseCallback3(const control_msgs::JointControllerState::ConstPtr& msg){
+   q(2) = msg->process_value; 
+}
+
+// void PoseCallback(const control_msgs::JointControllerState::ConstPtr& msg,double q1){
+//    q1 = msg->process_value; 
+// }
+
+// funCall = std::bind(RobotController::PoseCallback,q1); 
+#pragma endregion
+  
+
+
 Eigen::Vector3d Leg::DK(Eigen::Vector3d Q){
     Eigen::Vector3d XE;
 
@@ -20,6 +59,10 @@ Eigen::Vector3d Leg::gDist(Eigen::Vector3d Qd, Eigen::Vector3d Qstart){
         Dist(1) = angles::shortest_angular_distance(Qd(1), - Qstart(1));
         
         return Dist;
+}
+
+Eigen::Vector3d Leg::currentDist(Eigen::Vector3d Qd){
+    return gDist(Qd,q);
 }
 
 Eigen::Matrix3d  Leg::Calculate_Jv(Eigen::Vector3d Q){
@@ -66,14 +109,14 @@ double D = 4*(L12*L12)*(x0*x0) - 4*( (L12*L12)-(y0*y0) )*( (x0*x0)+(y0*y0) ) ;
 th1 = asin(( 2*L12*x0+sqrt(D) ) / ( 2*x0*x0+2*y0*y0) ); //+sqrt(D)  // std::cout << "checking : " << abs(L12-x0*sin(th1)+y0*cos(th1))  << std::endl;
 //because it may pi-th1 (which is out of bounds)
 if ( abs(L12-x0*sin(th1)+y0*cos(th1) ) < 1e-8) {  
-    SOLS[0][nTh1] = th1; 
+    SOLS(0,nTh1) = th1; 
     nTh1++;
 }
 
 if (abs(D)>1e-6){ // else identical solutions
     th1 = asin(( 2*L12*x0-sqrt(D) ) / ( 2*x0*x0+2*y0*y0) ); //-sqrt(D)
     if ( abs(L12-x0*sin(th1)+y0*cos(th1) ) < 1e-8) { 
-        SOLS[0][2*(nTh1)] = th1; //i want to group the solutions with the same th1 -> [th1 th1 th2 th2;...;...]
+        SOLS(0,2*(nTh1)) = th1; //i want to group the solutions with the same th1 -> [th1 th1 th2 th2;...;...]
         nTh1++;
     }
 }
@@ -83,7 +126,7 @@ double K1,K2;
 double c2,s2,det,A,B;
 
 for (int i = 0; i<nTh1 ;i++){
-    th1 = SOLS[0][2*i];    
+    th1 = SOLS(0,2*i);    
 
     K1 = x0*cos(th1)+y0*sin(th1);
     K2 = -z0 - L01;
@@ -107,9 +150,9 @@ for (int i = 0; i<nTh1 ;i++){
 
     th2 = atan2(s2,c2);
 
-    SOLS[0][nSols] = th1;
-    SOLS[1][nSols] = th2; 
-    SOLS[2][nSols] = th3 ;
+    SOLS(0,nSols) = th1;
+    SOLS(1,nSols) = th2; 
+    SOLS(2,nSols) = th3 ;
 
     nSols++;
 
@@ -119,9 +162,9 @@ for (int i = 0; i<nTh1 ;i++){
 
     th2 = atan2(s2,c2);
 
-    SOLS[0][nSols] = th1;
-    SOLS[1][nSols] = th2; 
-    SOLS[2][nSols] = -th3 ;
+    SOLS(0,nSols) = th1;
+    SOLS(1,nSols) = th2; 
+    SOLS(2,nSols) = -th3 ;
 
     nSols++;
 }
