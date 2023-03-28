@@ -137,6 +137,8 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(leg_position_controller src/leg_position_controller.cpp)
 add_executable(leg_goal_set src/leg_goal_set.cpp)
+add_executable(legHLC src/LegHLC.cpp)
+
 
 
 ## Rename C++ executable without prefix
@@ -152,6 +154,8 @@ add_executable(leg_goal_set src/leg_goal_set.cpp)
 ## Specify libraries to link a library or executable target against
 target_link_libraries(leg_position_controller ${catkin_LIBRARIES}   )
 target_link_libraries(leg_goal_set ${catkin_LIBRARIES}   )
+target_link_libraries(legHLC ${catkin_LIBRARIES}   )
+
 
 #############
 ## Install ##

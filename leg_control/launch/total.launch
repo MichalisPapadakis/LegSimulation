@@ -1,0 +1,46 @@
+<launch>
+
+<!-- ARGS -->
+<arg name="rvizConfig" default="$(find leg_control)/rvizConfigs/config1.rviz" />
+<arg name="model"      default="$(find leg_description)/urdf/my_leg.xacro" />  
+<!-- <arg name="half_width"      default="0.1" /> -->
+
+<!-- PARAMETERS -->
+<param name="robot_description" command="$(find xacro)/xacro $(arg model)" />
+<rosparam file="$(find leg_control)/launch/totalControl.yaml" command="load"/>
+
+<!-- NODES -->
+<node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizConfig)"/>
+
+<node name="ControllerManager" pkg="controller_manager" type="spawner" respawn="false"
+	output="screen" ns="/leg" 
+    args="joint_state_controller " />
+
+<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" >
+    <remap from="/joint_states" to="/leg/joint_states"/>
+</node>
+
+<node name="rqt" pkg="rqt_gui" type="rqt_gui" />
+<!-- args=" - -perspective-file $(find my_2link)/rqtPerspectives/2linkGUI.perspective"/> -->
+
+<!-- GAZEBO -->
+<include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="debug" value="false" />
+    <arg name="gui" value="true" />
+    <arg name="paused" value="true"/>
+    <arg name="verbose" value="true"/>
+    <arg name="use_sim_time" value="true"/>
+</include>
+
+<node name="RobotSpawner" pkg="gazebo_ros" type="spawn_model"
+        args=" -urdf -model robot -param robot_description" respawn="false" output="screen" />
+
+<!-- Static transform -->
+<!-- <node pkg="tf2_ros" type="static_transform_publisher" name="end_effector_broadcaster" args="$(arg half_width) 0 0 0 0 0 1 end_effector_link end_effector" /> -->
+
+<!-- High Level Controller -->
+<node name="HLcontroller" pkg="leg_control" type="legHLC" output="screen" >
+    <!-- <rosparam file="$(find leg_description)/launch/robot.yaml" command="load" /> -->
+</node>
+
+</launch>
