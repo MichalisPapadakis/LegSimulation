@@ -23,7 +23,7 @@
     <remap from="/joint_states" to="/leg/joint_states"/>
 </node>
 
-<!-- <node name="rqt" pkg="rqt_gui" type="rqt_gui" /> -->
+<node name="rqt" pkg="rqt_gui" type="rqt_gui" />
 <!-- args=" - -perspective-file $(find my_2link)/rqtPerspectives/2linkGUI.perspective"/> -->
 
 <!-- GAZEBO -->

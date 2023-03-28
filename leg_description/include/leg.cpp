@@ -1,21 +1,53 @@
-#include "leg_kinematics/leg_kinematics.hpp"
+#include "leg/leg.hpp"
 
 
 exIK::exIK(const std::string& str):
     ros::Exception::Exception(str) {}
 
+Eigen::Vector3d Leg::DK(Eigen::Vector3d Q){
+    Eigen::Vector3d XE;
 
-bool LegKinematics::IK(){
+        XE(0) = LB0 + L12*cos(Q(0)) - L23*sin(Q(0))*sin(Q(1)) - L3E*sin(Q(0))*sin(Q(1) + Q(2)); 
+        XE(1) = L01 + L3E*cos(Q(1) + Q(2)) + L23*cos(Q(1)); 
+        XE(2) = H + L12*sin(Q(0)) + L23*cos(Q(0))*sin(Q(1)) + L3E*cos(Q(0))*sin(Q(1) + Q(2));
+        
+
+    return XE;
+}
+
+Eigen::Vector3d Leg::gDist(Eigen::Vector3d Qd, Eigen::Vector3d Qstart){
+        Eigen::Vector3d Dist = Qd - Qstart ; 
+        Dist(1) = angles::shortest_angular_distance(Qd(1), - Qstart(1));
+        
+        return Dist;
+}
+
+Eigen::Matrix3d  Leg::Calculate_Jv(Eigen::Vector3d Q){
+
+    Eigen::Matrix3d Jv;
+
+    Jv.row(0) << L12*cos(Q(0)) - L23*sin(Q(0))*sin(Q(1)) - L3E*sin(Q(1) + Q(2))*sin(Q(0)),  cos(Q(0))*(L3E*cos(Q(1) + Q(2)) + L23*cos(Q(1))), L3E*cos(Q(1) + Q(2))*cos(Q(0));
+    Jv.row(1) << L12*sin(Q(0)) + L23*cos(Q(0))*sin(Q(1)) + L3E*sin(Q(1) + Q(2))*cos(Q(0)),  sin(Q(0))*(L3E*cos(Q(1) + Q(2)) + L23*cos(Q(1))), L3E*cos(Q(1) + Q(2))*sin(Q(0));
+    Jv.row(2) <<                                                                        0,             L3E*sin(Q(1) + Q(2))  + L23*sin(Q(1)),           L3E*sin(Q(1) + Q(2));
+    
+    ROS_INFO_STREAM("yoyoy");
+
+    return Jv;
+
+}
+
+bool Leg::IK(Eigen::Vector3d Xw){
 
 //reset number of solutions
 nSols = 0;
 int nTh1 = 0;
 double th1;
+double x0,y0,z0;
 
-//set positions as seen in the 0th frame
-x0 = zw -H;
-y0 = LB0-xw;
-z0 = -yw;
+//set positions as seen in the 0th frame 
+x0 = Xw(2) -H;
+y0 = LB0-Xw(0);
+z0 = -Xw(1);
 
 
 // Get th1 ---------------------------:
@@ -45,7 +77,6 @@ if (abs(D)>1e-6){ // else identical solutions
         nTh1++;
     }
 }
-
 // Get th2 and th3 -------------------:
 double th2,th3;
 double K1,K2;
@@ -97,7 +128,7 @@ for (int i = 0; i<nTh1 ;i++){
 
 //Inform  if solution doesn't exists:
 try{
-    if (nSols == 0) throw( exIK("Solution to IK doesn't exist: q3 doesn't exists" ) ) ;
+    if (nSols == 0) throw( exIK("Solution to IK doesn't exist: Q(2) doesn't exists" ) ) ;
 }catch( const exIK& e){
     ROS_ERROR_STREAM(e.what());
     return false; 

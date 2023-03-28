@@ -1,15 +1,16 @@
 #include <ros/ros.h>
 #include <std_msgs/Float64.h>
 #include <control_msgs/JointControllerState.h>
-#include "leg_kinematics/leg_kinematics.hpp"
+#include "leg/leg.hpp"
 #include "leg_control/pos.h"
+#include <eigen3/Eigen/Dense>
 
 
-class PositionController: public LegKinematics {
+class PositionController: public Leg {
 
 public:
 
-PositionController(): q1d(0), q2d(0), q3d(0) {
+PositionController()  {
     ros::NodeHandle init =  ros::NodeHandle("~");
     isValid = true;
 
@@ -32,11 +33,14 @@ PositionController(): q1d(0), q2d(0), q3d(0) {
 
 
     isValid = true;
-
     // Set zero initial goal
-    xw = LB0+L12;
-    yw = L01+L23+L3E;
-    zw = H;
+    Qd(0) = 0;
+    Qd(1) = 0;
+    Qd(2) = 0;
+
+    Xd(0) = LB0+L12;
+    Xd(1) = L01+L23+L3E;
+    Xd(2) = H;
 
     //Set up goal server
     ros::NodeHandle GoalServerHandle;
@@ -65,194 +69,95 @@ PositionController(): q1d(0), q2d(0), q3d(0) {
 
 }
 
+Eigen::Vector3d bestSol(){
+  // Eigen::VectorXd Dists(nSols);
+
+  double current_ang_dist;
+  double min_ang_dist = 1000*M_PI;
+  int index = 0;
+
+  for (int i = 0; i<nSols ; i++){
+    Eigen::Vector3d Qs( SOLS[0][i],SOLS[1][i],SOLS[2][i] );
+    ROS_DEBUG_STREAM(Qs <<  std::endl);
+    current_ang_dist = fabs ( gDist( Qs,q).sum() );
+    if (current_ang_dist < min_ang_dist ) {
+      index = i;
+      min_ang_dist  = current_ang_dist;
+    }
+  }
+
+  return Eigen::Vector3d(SOLS[0][index],SOLS[1][index],SOLS[2][index]) ;
+}
+
 bool setTarget(leg_control::pos::Request &req, leg_control::pos::Response &res){
 
-  xw = req.xw;
-  yw = req.yw;
-  zw = req.zw;
+  ROS_INFO_STREAM("[High Level Controller]  Current States: q1 = "<< q(0) <<", q2 = "<< q(1) <<", q3 = "<< q(2) <<"\n" );
 
-  ROS_INFO("[High Level Controller] Asking New Goal: xwd = %f, ywd = %f, zwd = %f \n",xw,yw,zw);
+  if (req.cartesian){
+    Xd(0) = req.xw;
+    Xd(1) = req.yw;
+    Xd(2) = req.zw;
+
+    ROS_INFO("[High Level Controller] Asking New Goal: xwd = %f, ywd = %f, zwd = %f \n",Xd(0),Xd(1),Xd(2));
+
+    //Call the Inverse Kinematics function to calculate new joint variables.
+    if( ! IK(Xd) ){
+      ROS_WARN_STREAM("[High Level Controller] Goal out of reach");
+      res.feasible = false;
+      return false;
+    }
+
+    // there are solution. Select best solution
+    Qd = bestSol();
+
+    ROS_INFO("[High Level Controller] New Goal is: q1 = %f, q2 = %f, q3 = %f \n",Qd(0),Qd(1),Qd(2));
 
 
-  //Call the Inverse Kinematics function to calculate new joint variables.
-  if( ! IK() ){
-    ROS_WARN_STREAM("[High Level Controller] Goal out of reach");
-    res.feasible = false;
-    return false;
+  }else {
+    Qd(0) = req.xw;
+    Qd(1) = req.yw;
+    Qd(2) = req.zw;
+
+    ROS_INFO("[High Level Controller] Asking New Goal in joint state space: q1 = %f, q2 = %f, q3 = %f \n",Qd(0),Qd(1),Qd(2));
+
   }
 
-  PublishTarget();
-  res.feasible = true;
-  return true;
-};
+  //populate message
+  q1m.data = Qd(0);
+  q2m.data = Qd(1);
+  q3m.data = Qd(2);
 
-void PublishTarget(){
-
-  ROS_INFO_STREAM("[High Level Controller]  Current States: q1 = "<< q1 <<", q2 = "<< q2 <<", q3 = "<< q3 <<"\n" );
-
-  double Qdistbest = 10000;
-  double Qdist; //Distance in the joint space
-  // will select the configuration with the minimum joint space distance
-  int is=0; //index of sol
-
-  for (int i=0;i<nSols ; i++){
-    Qdist = pow(SOLS[0][i] - q1,2)+pow(SOLS[1][i] - q2,2)+pow(SOLS[2][i] - q3,2);
-    if (Qdist < Qdistbest){ Qdistbest = Qdist; is = i;}
-  }
-
-  // will be 
-  q1m.data = SOLS[0][is];
-  q2m.data = SOLS[1][is];
-  q3m.data = SOLS[2][is];
-  
-  ROS_INFO_STREAM("[High Level Controller]  Desired States: q1 = "<< q1m.data <<", q2 = "<< q2m.data <<", q3 = "<< q3m.data <<"\n" );
-
+  // Publish:
   Joint1_command.publish(q1m);
   Joint2_command.publish(q2m);
   Joint3_command.publish(q3m);
-}
+
+  // Inform user for success!
+  res.feasible = true;
+  return true; 
+
+};
+
 
 bool getValid(){
   return isValid;
 }
 
-//For testing
-void setXYZ(const double & x,const double & y,const double &z){
-    xw = x;
-    yw = y;
-    zw = z;
-
-    if (IK()){
-        for (int i = 0; i<nSols ; i++){
-            ROS_INFO_STREAM( "Solution #" << i <<": q1 = "<< SOLS[0][i] <<", q2= "<< SOLS[1][i] <<", q3= "<< SOLS[2][i] << std::endl );
-        }
-    }else{
-        ROS_INFO_STREAM( "Did not find a solution to the IK problem"                    << std::endl);
-
-    }
-    ROS_INFO_STREAM( "-----------------------------------------"                    << std::endl);
-
-  
-
-}
 
 private: 
-
-// bool IK(){
-
-// //reset number of solutions
-// nSols = 0;
-// int nTh1 = 0;
-// double th1;
-
-// //set positions as seen in the 0th frame
-// x0 = zw -H;
-// y0 = LB0-xw;
-// z0 = -yw;
-
-
-// // Get th1 ---------------------------:
-
-// //Check if solution exists:
-// try{
-//   if (x0*x0 + y0*y0 < L12*L12 ) throw( exIK("Solution to IK doesn't exist: x0^2 + y0^2 < L12^2 " ) );
-// }catch( const exIK& e){
-//   ROS_ERROR_STREAM(e.what());
-//   return false;
-// }
-
-// //discriminant
-// double D = 4*(L12*L12)*(x0*x0) - 4*( (L12*L12)-(y0*y0) )*( (x0*x0)+(y0*y0) ) ;
-
-// th1 = asin(( 2*L12*x0+sqrt(D) ) / ( 2*x0*x0+2*y0*y0) ); //+sqrt(D)  // std::cout << "checking : " << abs(L12-x0*sin(th1)+y0*cos(th1))  << std::endl;
-// //because it may pi-th1 (which is out of bounds)
-// if ( abs(L12-x0*sin(th1)+y0*cos(th1) ) < 1e-8) {  
-//     SOLS[0][nTh1] = th1; 
-//     nTh1++;
-// }
-
-// if (abs(D)>1e-6){ // else identical solutions
-//     th1 = asin(( 2*L12*x0-sqrt(D) ) / ( 2*x0*x0+2*y0*y0) ); //-sqrt(D)
-//     if ( abs(L12-x0*sin(th1)+y0*cos(th1) ) < 1e-8) { 
-//         SOLS[0][2*(nTh1)] = th1; //i want to group the solutions with the same th1 -> [th1 th1 th2 th2;...;...]
-//         nTh1++;
-//     }
-// }
-
-// // Get th2 and th3 -------------------:
-// double th2,th3;
-// double K1,K2;
-// double c2,s2,det,A,B;
-
-// for (int i = 0; i<nTh1 ;i++){
-//     th1 = SOLS[0][2*i];    
-
-//     K1 = x0*cos(th1)+y0*sin(th1);
-//     K2 = -z0 - L01;
-
-//     // Check if solution exists
-//     if (K1*K1 + K2*K2 > pow(L23 + L3E,2) ){continue;} //check the second solution
-//     if (K1*K1 + K2*K2 < L23*L23 + L3E*L3E + 2*L23*L3E*cos(2.229)  ){continue;}
-
-
-//     // system definitions
-//     th3 = acos( (K1*K1+K2*K2 - L23*L23 - L3E*L3E)/(2*L23*L3E)  );
-
-//     det = -( L23*L23+L3E*L3E + 2*L23*L3E*cos(th3)) ;
-
-//     A = L3E*sin(th3);
-//     B = L23+L3E*cos(th3) ; 
-
-//     // 1st solution
-//     c2 = -(  A*K1 + B*K2 ) / det ;
-//     s2 =  ( -B*K1 + A*K2 ) / det ;
-
-//     th2 = atan2(s2,c2);
-
-//     SOLS[0][nSols] = th1;
-//     SOLS[1][nSols] = th2; 
-//     SOLS[2][nSols] = th3 ;
-
-//     nSols++;
-
-//     // 2nd solution
-//     c2 = -( -A*K1 + B*K2 ) / det ;
-//     s2 =  ( -B*K1 - A*K2 ) / det ;
-
-//     th2 = atan2(s2,c2);
-
-//     SOLS[0][nSols] = th1;
-//     SOLS[1][nSols] = th2; 
-//     SOLS[2][nSols] = -th3 ;
-
-//     nSols++;
-// }
-
-// //Inform  if solution doesn't exists:
-// try{
-//     if (nSols == 0) throw( exIK("Solution to IK doesn't exist: q3 doesn't exists" ) ) ;
-// }catch( const exIK& e){
-//     ROS_ERROR_STREAM(e.what());
-//     return false; 
-//     }
-
-// return true;
-
-// }
-
 
 //Callback function to be changed
 #pragma region
 void PoseCallback1(const control_msgs::JointControllerState::ConstPtr& msg) {
-   q1 = msg->process_value; 
+   q(0) = msg->process_value; 
 }
 
 void PoseCallback2(const control_msgs::JointControllerState::ConstPtr& msg){
-   q2 = msg->process_value; 
+   q(1) = msg->process_value; 
 }
 
 void PoseCallback3(const control_msgs::JointControllerState::ConstPtr& msg){
-   q3 = msg->process_value; 
+   q(2) = msg->process_value; 
 }
 
 // void PoseCallback(const control_msgs::JointControllerState::ConstPtr& msg,double q1){
@@ -265,7 +170,8 @@ void PoseCallback3(const control_msgs::JointControllerState::ConstPtr& msg){
 // Class variables
 #pragma region
 
-  double q1d,q2d,q3d; // the selected from the solution set solutions
+  // desired state
+  Eigen::Vector3d Qd, Xd;
   
   //msgs to publish desired states
   std_msgs::Float64 q1m,q2m,q3m;
@@ -283,6 +189,7 @@ void PoseCallback3(const control_msgs::JointControllerState::ConstPtr& msg){
   ros::Subscriber Joint2_pos;
   ros::Subscriber Joint3_pos;
 #pragma endregion
+
 };
 
 int main(int argc, char **argv){
@@ -295,23 +202,10 @@ int main(int argc, char **argv){
   //if we don't get the parameters we exit; 
   if (! PC.getValid() ) return -1; 
 
-  ros::Rate loop_rate(1);
+  ros::Rate loop_rate(100);
 
   while (ros::ok())
   {
-
-    // ROS_INFO_STREAM("matlab inputs: q1 = 0,q2 =0 ,q3=0 \n"); 
-    // PC.setXYZ(0.16763,0.5762294,0.40);
-
-    // ROS_INFO_STREAM("matlab inputs: q1 = 1,q2 =1 ,q3=-1 \n"); 
-    // PC.setXYZ(-0.0631,0.4599,0.6094);
-
-    // ROS_INFO_STREAM("matlab inputs: q1 = 0.5,q2 =0.3 ,q3=0.4 \n"); 
-    // PC.setXYZ(0.0422265,0.5071944,0.658168);
-
-    // ROS_INFO_STREAM("matlab inputs: q1 = 1.3,q2 =-0.3 ,q3=1.4 \n"); 
-    // PC.setXYZ(-0.0532165,0.4307835,0.546514);
-    // PC.loop();
     ros::spinOnce(); // for callbacks
     loop_rate.sleep();
 

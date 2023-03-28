@@ -10,7 +10,21 @@ project(leg_description)
 find_package(catkin REQUIRED COMPONENTS
   rviz
   xacro
+  # cmake_modules
+  # angles 
 )
+
+
+# find_package( Eigen3 3.3 REQUIRED )
+
+# if(NOT EXISTS "${Eigen3_INCLUDE_DIRS}")
+#     message(FATAL_ERROR "File or directory ${Eigen3_INCLUDE_DIRS} does not exist !")
+#   endif()
+
+# ############################################## 
+
+
+
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -103,7 +117,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
  INCLUDE_DIRS include
- LIBRARIES leg_kinematics
+ LIBRARIES leg
  CATKIN_DEPENDS  xacro roscpp #they are needed to build/run the pkg
 #  DEPENDS system_lib
 )
@@ -117,14 +131,19 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  # ${Eigen3_INCLUDE_DIRS}
 )
 
+# include_directories(${Eigen3_INCLUDE_DIRS})
+
+
 ## Declare a C++ library
-add_library(leg_kinematics STATIC
-  include/leg_kinematics.cpp
+add_library(leg STATIC
+  include/leg.cpp
 )
-# target_include_directories(leg_kinematics PUBLIC include/leg_kinematics)
-target_link_libraries(leg_kinematics ${catkin_LIBRARIES} )
+
+target_link_libraries(leg ${catkin_LIBRARIES} )
+# target_link_libraries(leg_kinematics ${catkin_LIBRARIES} Eigen3::Eigen)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -175,14 +194,14 @@ target_link_libraries(leg_kinematics ${catkin_LIBRARIES} )
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
-install(TARGETS leg_kinematics
+install(TARGETS leg
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
 )
 
 ## Mark cpp header files for installation
-install(DIRECTORY include/leg_kinematics/
+install(DIRECTORY include/leg/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   # FILES_MATCHING PATTERN "*.h"
   # PATTERN ".svn" EXCLUDE
