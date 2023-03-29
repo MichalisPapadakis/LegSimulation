@@ -69,14 +69,29 @@ Eigen::Matrix3d  Leg::Calculate_Jv(Eigen::Vector3d Q){
 
     Eigen::Matrix3d Jv;
 
-    Jv.row(0) << L12*cos(Q(0)) - L23*sin(Q(0))*sin(Q(1)) - L3E*sin(Q(1) + Q(2))*sin(Q(0)),  cos(Q(0))*(L3E*cos(Q(1) + Q(2)) + L23*cos(Q(1))), L3E*cos(Q(1) + Q(2))*cos(Q(0));
-    Jv.row(1) << L12*sin(Q(0)) + L23*cos(Q(0))*sin(Q(1)) + L3E*sin(Q(1) + Q(2))*cos(Q(0)),  sin(Q(0))*(L3E*cos(Q(1) + Q(2)) + L23*cos(Q(1))), L3E*cos(Q(1) + Q(2))*sin(Q(0));
-    Jv.row(2) <<                                                                        0,             L3E*sin(Q(1) + Q(2))  + L23*sin(Q(1)),           L3E*sin(Q(1) + Q(2));
-    
-    ROS_INFO_STREAM("yoyoy");
+    Jv.row(0) << - L12*sin(Q(0)) - L23*cos(Q(0))*sin(Q(1)) - L3E*sin(Q(1) + Q(2))*cos(Q(0)), -sin(Q(0))*(L3E*cos(Q(1) + Q(2)) + L23*cos(Q(1))), -L3E*cos(Q(1) + Q(2))*sin(Q(0));
+    Jv.row(1) <<                                                             0,          - L3E*sin(Q(1) + Q(2)) - L23*sin(Q(1)),         -L3E*sin(Q(1) + Q(2));
+    Jv.row(2) <<   L12*cos(Q(0)) - L23*sin(Q(0))*sin(Q(1)) - L3E*sin(Q(1) + Q(2))*sin(Q(0)),  cos(Q(0))*(L3E*cos(Q(1) + Q(2)) + L23*cos(Q(1))),  L3E*cos(Q(1) + Q(2))*cos(Q(0));
 
     return Jv;
 
+}
+
+Eigen::Vector3d Leg::CalculateG(Eigen::Vector3d Q){
+    Eigen::Vector3d G;
+    G(0) = 1.1898845*cos(Q(0)) + 0.0038749206*sin(Q(0)) + 0.0039136544*cos(Q(1))*sin(Q(0)) - 1.2083284*sin(Q(0))*sin(Q(1)) - 0.38472813*cos(Q(1))*sin(Q(0))*sin(Q(2)) - 0.38472813*cos(Q(2))*sin(Q(0))*sin(Q(1));
+    G(1) = 1.962e-9*cos(Q(0))*(196089770.0*cos(Q(1) + Q(2)) + 615868870.0*cos(Q(1) - 0.0032388883));
+    G(2) = 0.38472813*cos(Q(1) + Q(2))*cos(Q(0));
+
+    return G;
+};
+
+Eigen::Vector3d Leg::CalculateG(){
+    return CalculateG(q);
+};
+
+Eigen::Matrix3d  Leg::Calculate_Jv(){
+    return Calculate_Jv(q);
 }
 
 bool Leg::IK(Eigen::Vector3d Xw){

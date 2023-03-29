@@ -61,6 +61,16 @@ bool IK(Eigen::Vector3d Xw);
  */
 Eigen::Matrix3d  Calculate_Jv(Eigen::Vector3d Q);
 
+Eigen::Vector3d CalculateG(Eigen::Vector3d Q);
+
+Eigen::Vector3d CalculateG();
+
+/** @brief Geometric Jacobian using current position
+ *
+ * \throws exIK If there is no solution to the inverse kinematics problem
+ */
+Eigen::Matrix3d  Calculate_Jv();
+
 // Getters
 Eigen::Vector3d getState(){
   return q; 

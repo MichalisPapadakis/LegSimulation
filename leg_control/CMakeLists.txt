@@ -59,6 +59,7 @@ add_service_files(
   FILES
   pos.srv
   ControllerSelector.srv
+  wrench.srv
   # Service1.srv
   # Service2.srv
 )
@@ -140,6 +141,8 @@ add_executable(leg_position_controller src/leg_position_controller.cpp)
 add_executable(leg_goal_set src/leg_goal_set.cpp)
 add_executable(legHLC src/LegHLC.cpp)
 add_executable(ControllerSelector src/ControllerSelector.cpp)
+add_executable(SetEffort src/SetEffort.cpp)
+
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -156,7 +159,7 @@ target_link_libraries(leg_position_controller ${catkin_LIBRARIES}   )
 target_link_libraries(leg_goal_set ${catkin_LIBRARIES}   )
 target_link_libraries(legHLC ${catkin_LIBRARIES}   )
 target_link_libraries(ControllerSelector ${catkin_LIBRARIES}   )
-
+target_link_libraries(SetEffort ${catkin_LIBRARIES}   )
 #############
 ## Install ##
 #############

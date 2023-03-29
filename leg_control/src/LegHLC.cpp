@@ -6,7 +6,9 @@
 #include <eigen3/Eigen/Dense>
 
 
- 
+//Effort Controllers
+#include <leg_control/wrench.h> 
+
 //Controller management: Select and (Un)Load controllers
 #include <ros/service_client.h>
 #include <controller_manager_msgs/SwitchController.h>
@@ -129,9 +131,9 @@ bool setTarget(leg_control::pos::Request &req, leg_control::pos::Response &res){
 
 };
 
-bool getValid(){
-  return isValid;
-}
+// bool getValid(){
+//   return isValid;
+// }
 
 void  setActive(const bool & state ){ CurrentlyActive = state;}
 bool  getActive()                   { return CurrentlyActive;}
@@ -171,6 +173,91 @@ TrajectoryController(Leg& LegObj): L(LegObj) {
     //Start as Inactive Controller
     CurrentlyActive = false;
 };
+
+// this is not optimal
+Eigen::Vector3d bestSol(Eigen::Vector3d Qs){
+  // Eigen::VectorXd Dists(nSols);
+
+  double current_ang_dist;
+  double min_ang_dist = 1000*M_PI;
+  int index = 0;
+  int nSols = L.get_nSols();
+  Eigen::Vector3d Qd;
+
+  for (int i = 0; i<nSols ; i++){
+
+    Qd << ( L.getSols() ).col(i) ;
+    ROS_DEBUG_STREAM(Qs <<  std::endl);
+
+    current_ang_dist = fabs ( L.gDist(Qd,Qs).sum() );
+    if (current_ang_dist < min_ang_dist ) {
+      index = i;
+      min_ang_dist  = current_ang_dist;
+    }
+  }
+
+  return ( L.getSols() ).col(index) ;
+}
+
+void generateQwp( Eigen::Matrix<double, 3,Eigen::Dynamic > Xwp,Eigen::Matrix<double, 1,Eigen::Dynamic > twp){
+
+  using Eigen::seq ;
+  using Eigen::seqN ;
+  using Eigen::all; 
+
+  const int N = Xwp.cols();
+  bool  feasible_traj = true;
+
+  //In contrast to matlab code, here the starting point is NOT included!
+  Eigen::MatrixXd Qw(3,N); 
+
+  // Find Qw ----------------------- (Part 1)
+  for (int i=0; i< N; i++){
+    if ( L.IK( Xwp.col(i) )){ 
+      ROS_ERROR_STREAM("[Trajectory Controller]: The specified trajectory contains unreachable points. Dropping trajectory!");
+      feasible_traj = false;
+      break;
+    }
+
+    if (i==0){
+        Qw.col(i) = bestSol( L.getState() );
+    }else{
+        Qw.col(i) = bestSol( Qw.col(i-1) );
+    }  
+  }
+
+  // Find Velocities:
+  Eigen::MatrixXd Qtw = Eigen::MatrixXd::Zero(3,N); 
+
+  //Find mean Velocity  ----------------------- (Part 2)
+  Eigen::MatrixXd Ul = Eigen::MatrixXd::Zero(3,N-1);
+  Eigen::MatrixXd Ur = Ul;
+  Eigen::Vector3d MeanVel;
+  Eigen::MatrixXd _DT  = Eigen::MatrixXd::Identity(N-2,N-2) * twp; 
+
+  Ul = Qw(all,seqN(1,N-1)) - Qw(all,seqN(0,N-1)) * _DT;
+  Ur = Qw(all,seqN(2,N-1)) - Qw(all,seqN(1,N-1)) * _DT; 
+
+  for(int r=0;r<3;r++){
+    for(int c=0;c<N-1;c++){
+        MeanVel(r) = ( Ul(r,c)* Ur(r,c) >0 )? 0.5*Ul(r,c)+ Ur(r,c) : 0 ;
+    }
+    Qtw.row(r) = MeanVel;
+  }
+  Qtw.row(N) <<0,0,0;
+
+
+
+
+
+
+
+
+
+  
+
+
+}
 void  setActive(const bool & state ){ CurrentlyActive = state;}
 bool  getActive()                   { return CurrentlyActive;}
 
@@ -187,9 +274,52 @@ private:
 class EffortController{
 public:
 EffortController(Leg& LegObj): L(LegObj) {
+    ros::NodeHandle NH; //Public Nodehanlde
+
     //Start as Inactive Controller
     CurrentlyActive = false;
+
+    //Initial Goal
+    Fd<<0,0,0;
+
+    //Set up goal server
+    // ros::NodeHandle GoalServerHandle; ----------------<>
+    EffortServer = NH.advertiseService("SetEffort",&EffortController::setEffort, this);
+
+    Joint1_command = NH.advertise<std_msgs::Float64>("/leg/joint1_effort_controller/command",10);
+    Joint2_command = NH.advertise<std_msgs::Float64>("/leg/joint2_effort_controller/command",10);
+    Joint3_command = NH.advertise<std_msgs::Float64>("/leg/joint3_effort_controller/command",10);
+
 };
+
+void PublishEffort(){
+  //required as there is no feedback loop by ros control
+  // With gravity compensation
+  Eigen::Vector3d t = L.Calculate_Jv().transpose() * Fd + L.CalculateG();
+  t1.data = t(0);
+  t2.data = t(1);
+  t3.data = t(2);
+
+  Joint1_command.publish(t1);
+  Joint2_command.publish(t2);
+  Joint3_command.publish(t3);
+
+
+}
+
+bool setEffort(leg_control::wrench::Request & req,leg_control::wrench::Response & res){
+  if (!CurrentlyActive){
+     ROS_WARN_STREAM("[High Level Controller] Effort Control is not activated");
+     res.feasible = true;
+     return false;
+  }
+  // F from EE to world
+  Fd << req.fxw, req.fyw, req.fzw ;
+  res.feasible = true;
+  return true;
+
+}
+
 void  setActive(const bool & state ){ CurrentlyActive = state;}
 bool  getActive()                   { return CurrentlyActive;}
 
@@ -197,9 +327,19 @@ private:
  //robot
   Leg& L; //reference to the robot.
 
+  Eigen::Vector3d Fd; 
+  std_msgs::Float64 t1,t2,t3;
+
   //logic flag
   bool isValid;  
   bool CurrentlyActive; 
+
+  // Ros functionality:
+  ros::ServiceServer EffortServer;
+
+  ros::Publisher Joint1_command;
+  ros::Publisher Joint2_command;
+  ros::Publisher Joint3_command;
   
 };
 
@@ -301,7 +441,10 @@ bool SelectController(leg_control::ControllerSelector::Request &req, leg_control
 
 // Start Controllers
 void StartPosition(){
-PC.setActive(true); //Activate Module
+PC.setActive(true ); //Activate Position Module
+TC.setActive(false); //De-Activate Trajectory Module
+EC.setActive(false); //De-Activate Force Module
+
 
 // Start respective controllers:
 controller_manager_msgs::SwitchController Sw;
@@ -339,8 +482,9 @@ if ( CM_switcher.call(Sw) ){
 }
 
 void StartTrajectory(){
-PC.setActive(false); //De-activate Position Module
-
+PC.setActive(false); //De-Activate Position Module
+TC.setActive(true);  //Activate Trajectory Module
+EC.setActive(false); //De-Activate Force Module
 
 // Start respective controllers:
 controller_manager_msgs::SwitchController Sw;
@@ -378,7 +522,9 @@ if ( CM_switcher.call(Sw) ){
 }
 
 void StartEffort(){
-PC.setActive(false); //De-activate Position Module
+PC.setActive(false); //De-Activate Position Module
+TC.setActive(false); //De-Activate Trajectory Module
+EC.setActive(true);  //Activate Force Module
 
 // Start respective controllers:
 controller_manager_msgs::SwitchController Sw;
@@ -419,6 +565,13 @@ bool getValid(){
   return isValid;
 }
 
+//Looping
+void Loop(){
+  if (CurrentMode == 3){
+    EC.PublishEffort();
+  }
+
+}
 private: 
 
 // Class variables
@@ -462,6 +615,7 @@ int main(int argc, char **argv){
   while (ros::ok())
   {
     ros::spinOnce(); // for callbacks
+    Controller.Loop();
     loop_rate.sleep();
   }
   return 0;

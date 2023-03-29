@@ -1,0 +1,5 @@
+float32 fxw
+float32 fyw
+float32 fzw
+---
+bool feasible
