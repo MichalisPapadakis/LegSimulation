@@ -58,6 +58,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_service_files(
   FILES
   pos.srv
+  ControllerSelector.srv
   # Service1.srv
   # Service2.srv
 )
@@ -138,8 +139,7 @@ include_directories(
 add_executable(leg_position_controller src/leg_position_controller.cpp)
 add_executable(leg_goal_set src/leg_goal_set.cpp)
 add_executable(legHLC src/LegHLC.cpp)
-
-
+add_executable(ControllerSelector src/ControllerSelector.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -155,7 +155,7 @@ add_executable(legHLC src/LegHLC.cpp)
 target_link_libraries(leg_position_controller ${catkin_LIBRARIES}   )
 target_link_libraries(leg_goal_set ${catkin_LIBRARIES}   )
 target_link_libraries(legHLC ${catkin_LIBRARIES}   )
-
+target_link_libraries(ControllerSelector ${catkin_LIBRARIES}   )
 
 #############
 ## Install ##
