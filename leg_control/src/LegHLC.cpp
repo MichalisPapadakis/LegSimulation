@@ -64,7 +64,7 @@ Eigen::Vector3d bestSol(){
     Qs << ( L.getSols() ).col(i) ;
     ROS_DEBUG_STREAM(Qs <<  std::endl);
 
-    current_ang_dist = fabs ( L.currentDist( Qs).sum() );
+    current_ang_dist = fabs ( L.currentDist( Qs).norm() );
     if (current_ang_dist < min_ang_dist ) {
       index = i;
       min_ang_dist  = current_ang_dist;
@@ -174,22 +174,41 @@ TrajectoryController(Leg& LegObj): L(LegObj) {
     CurrentlyActive = false;
 };
 
+void TestTraj(){
+  Eigen::Matrix<double,3,5> Xp;
+  Xp.col(0) << 0.16763,0.4 ,0.3 ;
+  Xp.col(1) << 0.16763,0.2 ,0.2 ;
+  Xp.col(2) << 0.16763,0.1 ,0.1 ;
+  Xp.col(3) << 0.16763,0.05,(0.045/2)+0.005 ;
+  Xp.col(4) << 0.16763,0   ,(0.045/2) ;
+  Eigen::Matrix<double,1,5> Tw;
+  Tw << 1,2,3,4,5;
+  if ( !generateQwp(Xp,Tw)){
+    ROS_ERROR_STREAM("Error generating traj");
+  };
+
+  ROS_INFO_STREAM(Qw<<std::endl);
+  ROS_INFO_STREAM(Qtw<<std::endl);
+  ROS_INFO_STREAM(tw<<std::endl);
+
+}
+
 // this is not optimal
 Eigen::Vector3d bestSol(Eigen::Vector3d Qs){
   // Eigen::VectorXd Dists(nSols);
 
   double current_ang_dist;
   double min_ang_dist = 1000*M_PI;
+
   int index = 0;
+  
   int nSols = L.get_nSols();
   Eigen::Vector3d Qd;
 
   for (int i = 0; i<nSols ; i++){
 
     Qd << ( L.getSols() ).col(i) ;
-    ROS_DEBUG_STREAM(Qs <<  std::endl);
-
-    current_ang_dist = fabs ( L.gDist(Qd,Qs).sum() );
+    current_ang_dist = fabs ( L.gDist(Qd,Qs).norm() );
     if (current_ang_dist < min_ang_dist ) {
       index = i;
       min_ang_dist  = current_ang_dist;
@@ -199,8 +218,9 @@ Eigen::Vector3d bestSol(Eigen::Vector3d Qs){
   return ( L.getSols() ).col(index) ;
 }
 
-void generateQwp( Eigen::Matrix<double, 3,Eigen::Dynamic > Xwp,Eigen::Matrix<double, 1,Eigen::Dynamic > twp){
+bool generateQwp( Eigen::Matrix<double, 3,Eigen::Dynamic > Xwp,Eigen::Matrix<double, 1,Eigen::Dynamic > twp){
 
+  tw = twp; 
   using Eigen::seq ;
   using Eigen::seqN ;
   using Eigen::all; 
@@ -209,11 +229,11 @@ void generateQwp( Eigen::Matrix<double, 3,Eigen::Dynamic > Xwp,Eigen::Matrix<dou
   bool  feasible_traj = true;
 
   //In contrast to matlab code, here the starting point is NOT included!
-  Eigen::MatrixXd Qw(3,N); 
+  Qw = Eigen::MatrixXd::Zero(3,N); 
 
   // Find Qw ----------------------- (Part 1)
   for (int i=0; i< N; i++){
-    if ( L.IK( Xwp.col(i) )){ 
+    if ( !L.IK( Xwp.col(i) )){ 
       ROS_ERROR_STREAM("[Trajectory Controller]: The specified trajectory contains unreachable points. Dropping trajectory!");
       feasible_traj = false;
       break;
@@ -227,43 +247,48 @@ void generateQwp( Eigen::Matrix<double, 3,Eigen::Dynamic > Xwp,Eigen::Matrix<dou
   }
 
   // Find Velocities:
-  Eigen::MatrixXd Qtw = Eigen::MatrixXd::Zero(3,N); 
+  Qtw = Eigen::MatrixXd::Zero(3,N); 
 
   //Find mean Velocity  ----------------------- (Part 2)
   Eigen::MatrixXd Ul = Eigen::MatrixXd::Zero(3,N-1);
   Eigen::MatrixXd Ur = Ul;
   Eigen::Vector3d MeanVel;
-  Eigen::MatrixXd _DT  = Eigen::MatrixXd::Identity(N-2,N-2) * twp; 
 
-  Ul = Qw(all,seqN(1,N-1)) - Qw(all,seqN(0,N-1)) * _DT;
-  Ur = Qw(all,seqN(2,N-1)) - Qw(all,seqN(1,N-1)) * _DT; 
-
-  for(int r=0;r<3;r++){
-    for(int c=0;c<N-1;c++){
-        MeanVel(r) = ( Ul(r,c)* Ur(r,c) >0 )? 0.5*Ul(r,c)+ Ur(r,c) : 0 ;
-    }
-    Qtw.row(r) = MeanVel;
+  //Create a diagonal matrix with 1/tw_i, in order to create derivatives.
+  Eigen::MatrixXd _DT  = ( twp(seqN(1,N-1)) - twp(seqN(0,N-1)) ).asDiagonal() ;
+  for (int i=0;i<N-1;i++){
+    _DT(i,i) = 1/_DT(i,i);
   }
-  Qtw.row(N) <<0,0,0;
 
+  // Create the differences: (l: left, r:right)
+  Ul(all,0) = Qw(all,1) - L.getState()/tw(0); 
+  Ul(all, seqN(1,N-2) ) << ( Qw(all,seqN(1,N-2)) - Qw(all,seqN(0,N-2)) )  * _DT(seqN(0,N-2),seqN(0,N-2));
 
+  Ur = ( Qw(all,seqN(1,N-1)) - Qw(all,seqN(0,N-1)) )  * _DT(seqN(0,N-1),seqN(0,N-1)); 
 
+  //calculate mean velocity;
+  for(int c=0;c<N-1;c++){
+    for(int r=0;r<3;r++){
+        MeanVel(r) = ( Ul(r,c)* Ur(r,c) >0 )? 0.5*( Ul(r,c)+ Ur(r,c)) : 0 ;
+    }
+    Qtw.col(c) = MeanVel;
+  }
 
-
-
-
-
-
-  
-
-
+  return feasible_traj;
 }
+
 void  setActive(const bool & state ){ CurrentlyActive = state;}
 bool  getActive()                   { return CurrentlyActive;}
 
 private:
  //robot
   Leg& L; //reference to the robot.
+
+  //Waypoints
+  Eigen::Matrix<double, 3,Eigen::Dynamic > Qw;
+  Eigen::Matrix<double, 3,Eigen::Dynamic > Qtw;
+  Eigen::Matrix<double, 1,Eigen::Dynamic > tw;
+
 
   //logic flag
   bool isValid;  
@@ -355,6 +380,8 @@ HLC(): PC(this-> L), TC(this->L), EC(this->L) {
 
     //Initialize robot
     L.init(); //set up state subscribers
+
+    TC.TestTraj();
 
     //Load controllers:
     loadControllers(); //load ros control

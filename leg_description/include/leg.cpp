@@ -15,6 +15,7 @@ void Leg::init(){
     ros::NodeHandle n32;
     Joint3_pos = n32.subscribe("/leg/joint2_position_controller/state",1000,&Leg::PoseCallback3,this);
 
+    q(0) = 0; q(1)=0; q(2)=0;
 }
 
 void Leg::Querry_state(){
@@ -56,7 +57,7 @@ Eigen::Vector3d Leg::DK(Eigen::Vector3d Q){
 
 Eigen::Vector3d Leg::gDist(Eigen::Vector3d Qd, Eigen::Vector3d Qstart){
         Eigen::Vector3d Dist = Qd - Qstart ; 
-        Dist(1) = angles::shortest_angular_distance(Qd(1), - Qstart(1));
+        Dist(1) = angles::shortest_angular_distance(Qd(1), Qstart(1));
         
         return Dist;
 }
