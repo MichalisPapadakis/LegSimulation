@@ -13,9 +13,19 @@
 #include <leg_control/ellipse.h> 
 
 
+/** @brief Trajectory Controller class. 
+ * 
+ * @note It is responsible for setting new trajectory targets (in cartesian space) through ros services. Also, 
+ * 
+ */
 class TrajectoryController{
 public:
 
+/** @brief Trajectory Controller class constructor. 
+ * 
+ * @param  LegObj reference to an instance of an  object from the class `Leg`. That way, the states are 
+ * linked in the different controllers   
+ */
 TrajectoryController(Leg& LegObj): 
 L(LegObj), 
 ac("leg/Trajectory_Controller/follow_joint_trajectory",true)  
@@ -31,66 +41,21 @@ ac("leg/Trajectory_Controller/follow_joint_trajectory",true)
 
 };
 
-bool GenerateVerticalEllipse(){
-  // Arrays for element wise multiplication and division:
-  #define NpointsE 30
-  using Eigen::placeholders::all;
+/** @brief Set  `CurrentlyActive` status. Useful for HLC.
+ * 
+ * 
+ * @param state true to activate, false to deactivate
+ */
+void  setActive(const bool & state ){ CurrentlyActive = state;}
 
-  Eigen::MatrixXd X(3,NpointsE);
-  Eigen::ArrayXd  th = Eigen::ArrayXd::LinSpaced( NpointsE, 2*M_PI/(NpointsE-1), 2*M_PI );
+/** @brief Get  `CurrentlyActive` status. Useful for HLC.
+ * 
+ * @returns `CurrentlyActive`. It is true if  active, otherwise false .
+ */
+bool  getActive()                   { return CurrentlyActive;}
 
-  // radius(th)
-  Eigen::ArrayXd  r = a*b /                 //r = ab/sqrt( b^2 c(th-dth)^2 +  a^2 s(th-dth)^2 )
-  ( 
-    (b*b)*(   (th-dth).cos().pow(2)   )  +  // b^2*( cos(th-dth) )^2
-    (a*a)*(   (th-dth).sin().pow(2)   )     // a^2*( sin(th-dth) )^2
-  ).sqrt();
-
-    ROS_INFO_STREAM(X);
-
-  //Populate X
-  double Xo = L.DK(Eigen::Vector3d(0,0,0))  (0); // get first element of vector
-
-
-  X.row(0) = Eigen::MatrixXd::Constant(1,NpointsE,Xo);
-  X.row(1) = ( r*th.cos() + DX ).matrix();
-  X.row(2) = ( r*th.sin() + DY ).matrix();
-
-  Eigen::VectorXd t = Eigen::ArrayXd::LinSpaced(NpointsE,5/(NpointsE-1),5).matrix();
-
-    ROS_INFO_STREAM("starting call to generateQ!");
-     ROS_INFO_STREAM(X);
-ROS_INFO_STREAM(t);
-
-  if (! generateQwp(X,t) ) {
-    
-    ROS_ERROR_STREAM("Problem With generation trajectory from ellipse");
-    return false;
-  };
-
-  PublishTrajectory();
-  return true;
-
-
-}
-
-
-bool SetEllipse(leg_control::ellipse::Request& req,leg_control::ellipse::Response & res){
-  a = req.a;   b = req.b; times = req.times;
-  DX = req.DX; DY = req.DY; dth = req.dth;
-
-  ROS_INFO_STREAM("starting call to generate!");
-
-  if (! GenerateVerticalEllipse()) {
-    res.feasible=false;
-  return false;
-  }
-  res.feasible=true;
-  return true;
-
-}
-
-//My traj
+/** @brief A test, manual trajectory to test the controller
+ */
 void TestTraj(){
   Eigen::Matrix<double,3,5> Xp;
   Xp.col(0) << 0.16763,0.4 ,0.3 ;
@@ -113,13 +78,201 @@ void TestTraj(){
 
 }
 
-//Publish trajectory
-bool PublishTrajectory(){
-  if (! ac.isServerConnected() ){
-    // gain time;
-    ROS_ERROR_STREAM("No action server is connected to publish trajectory. Trajectory is aborted!");
+/** @brief Set ellipse parameters through the service call `SetEllipse`
+ * 
+ * @note Generation is based on the polar form of an ellipse. Eigen::array is used for element-wise division and multipliation. 
+ * Failure  may be unsuccesfull due to:
+ * 1) failure of the ellipse waypoint generation,
+ * 2) due to failure in publishing the trajectory or
+ * 3) due to the trajectory controller being inactive
+ * 
+ * @returns true if the waypoint generation is succesful, false otherwise.
+ * @throws `ros::InvalidParameterException` if a,b or times are not strictly positive
+ */
+bool SetEllipse(leg_control::ellipse::Request& req,leg_control::ellipse::Response & res){
+  if (! CurrentlyActive) {
+    ROS_ERROR_STREAM("[Trajectory Controller]: Trajectory controller is not currently active. Dropping ellipse");
+    res.feasible=false;
     return false;
   }
+
+  a = req.a;   b = req.b; times = req.times;
+  DX = req.DX; DY = req.DY; dth = req.dth;
+
+
+  try {
+    if (! (a>0)     ) throw  ros::InvalidParameterException("[Trajectory Controller]: `a` must be positive") ;
+    if (! (b > 0)   ) throw  ros::InvalidParameterException("[Trajectory Controller]: `b` must be positive") ;
+    if (!(times > 0)) throw  ros::InvalidParameterException("[Trajectory Controller]: `times` must be positive") ;
+  } catch (const  ros::InvalidParameterException & e){
+    ROS_ERROR_STREAM( e.what() ) ;
+    res.feasible=false;
+    return false;
+  }
+
+
+  if (! GenerateVerticalEllipse()) {
+    ROS_INFO_STREAM("[Trajectory Controller]: Problem with ellipse waypoint generation");
+    res.feasible=false;
+    return false;
+  }
+
+  if (! PublishTrajectory()){
+    ROS_INFO_STREAM("[Trajectory Controller]: Problem with ellipse waypoint publishing");
+    res.feasible=false;
+    return false;
+
+  }
+  
+  res.feasible=true;
+  return true;
+
+}
+
+private:
+
+/** @brief Generate Cartesian waypoint for a vertical ellipse from the ellipse parameter passed by the user.
+ * 
+ * @note Generation is based on the polar form of an ellipse. Eigen::array is used for element-wise division and multipliation. 
+ * Failure  may be unsuccesfull due to failure of the joint angle waypoint generation. 
+ * 
+ * @returns true if the waypoint generation is succesful, false otherwise.
+ */
+bool GenerateVerticalEllipse(){
+  // Arrays for element wise multiplication and division:
+  #define NpointsE 30
+  using Eigen::placeholders::all;
+
+  Eigen::MatrixXd X(3,NpointsE);
+  Eigen::ArrayXd  th = Eigen::ArrayXd::LinSpaced( NpointsE, 2*M_PI/(NpointsE-1), 2*M_PI );
+
+  Eigen::ArrayXd  r = a*b /                 //r = ab/sqrt( b^2 c(th-dth)^2 +  a^2 s(th-dth)^2 )
+  ( 
+    (b*b)*(   (th-dth).cos().pow(2)   )  +  // b^2*( cos(th-dth) )^2
+    (a*a)*(   (th-dth).sin().pow(2)   )     // a^2*( sin(th-dth) )^2
+  ).sqrt();
+
+  //Populate X
+  double Xo = L.DK(Eigen::Vector3d(0,0,0))  (0); // get first element of vector
+
+
+  X.row(0) = Eigen::MatrixXd::Constant(1,NpointsE,Xo);
+  X.row(1) = ( r*th.cos() + DX ).matrix();
+  X.row(2) = ( r*th.sin() + DY ).matrix();
+
+  Eigen::VectorXd t = Eigen::ArrayXd::LinSpaced(NpointsE,5/(NpointsE-1),5).matrix();
+
+  if (! generateQwp(X,t) ) {
+    
+    ROS_ERROR_STREAM("[Trajectory Controller]: Problem With generation trajectory from ellipse");
+    return false;
+  };
+
+  return true;
+
+
+}
+
+/** @brief Generate angular position waypoints from cartesian waypoints 
+ * 
+ * @note Checks if a point is reachable (solution to IK exists), then solution with the shortest distance in joint angle
+ * space. This is **NOT OPTIMAL**. As for velocities, the mean velocity for each segment is calculated. Then for each setpoint,
+ * if the velocity of the previous and next segment are in the same direction, their mean value is given. If the velocities point 
+ * to the opposite direction, the desired velocity is set to 0.The generation can fail because: 1) a waypoint is unreachable, 
+ * 2) timestamp is unreasonable
+ * 
+ * @param Xwp A 3xN `Eigen::matrix` with all the cartesian waypoints. Each column is a point in 3D space.
+ * @param twp A Nx1 `Eigen::Vector` with the timestamps for each waypoint.
+ * 
+ * @returns true if the waypoint generation is successful, false otherwise. 
+ */
+bool generateQwp( Eigen::MatrixXd Xwp, Eigen::VectorXd twp){
+  using Eigen::seq ;
+  using Eigen::seqN ;
+  using Eigen::all; 
+
+  tw = twp; 
+
+  const int N = Xwp.cols(); //number of columns = number of waypoints
+  NumberOfWp = N;
+  bool  feasible_traj = true;
+
+  // ----------------------- (Part 1) --------------------------
+  // ----------------------- Position --------------------------
+
+  //In contrast to matlab code, here the starting point is NOT included!
+  Qw = Eigen::MatrixXd::Zero(3,N); 
+  
+  for (int i=0; i< N; i++){
+    if ( !L.IK( Xwp.col(i) )){ 
+      ROS_ERROR_STREAM("[Trajectory Controller]: The specified trajectory contains unreachable points. Dropping trajectory!");
+      feasible_traj = false;
+      break;
+    }
+
+    //Serially find best  -> not optimal
+    if (i==0){
+        Qw.col(i) = bestSol( L.getState() );
+    }else{
+        Qw.col(i) = bestSol( Qw.col(i-1) );
+    }  
+  }
+
+  // ----------------------- (Part 2) --------------------------
+  // ----------------------- Velocity --------------------------
+  Qtw = Eigen::MatrixXd::Zero(3,N); 
+
+  //Create matrices
+  Eigen::MatrixXd Ul = Eigen::MatrixXd::Zero(3,N-1);
+  Eigen::MatrixXd Ur = Ul;
+  Eigen::Vector3d MeanVel;
+
+  //Create a diagonal matrix with 1/tw_i, in order to create derivatives.
+  Eigen::MatrixXd _DT  = ( twp(seqN(1,N-1)) - twp(seqN(0,N-1)) ).asDiagonal() ;
+  for (int i=0;i<N-1;i++){
+    //check division by zero
+    if (! _DT(i,i) >0){
+      ROS_ERROR_STREAM("Two waypoints in the same timestamp. Infeasible trajectory! Aborting.");
+      return false;
+    }
+    _DT(i,i) = 1/_DT(i,i);
+  }
+
+  // Create the derivatives of positions using finite differences: (l: left, r:right)
+  Ul.col(0) = (   Qw.col(0) - L.getState()   )/twp(0); 
+  Ul(all, seqN(1,N-2) ) << (   Qw(all,seqN(1,N-2)) - Qw(all,seqN(0,N-2))  )  * _DT(seqN(0,N-2),seqN(0,N-2));
+
+  Ur =                     (   Qw(all,seqN(1,N-1)) - Qw(all,seqN(0,N-1))  )  * _DT(seqN(0,N-1),seqN(0,N-1)); 
+
+  //calculate mean velocity. If velocities are in oposite direction, set 0 velocity:
+  for(int c=0;c<N-1;c++){
+    for(int r=0;r<3;r++){
+        MeanVel(r) = ( Ul(r,c)* Ur(r,c) >0 ) ? 0.5*( Ul(r,c)+ Ur(r,c)) : 0 ;
+    }
+    Qtw.col(c) = MeanVel;
+  }
+
+  return feasible_traj;
+}
+
+/** @brief Populate the trajectory action message and publish it to the action server.
+ * 
+ * @note Publishing may be unsuccesfull due to a number of reasons:
+ * 1) The action server is not running
+ * 2) The trajectory controller in not active.
+ * 
+ * @returns true if publishing is successful.
+ */
+bool PublishTrajectory(){
+  if ( ! CurrentlyActive) {
+    ROS_ERROR_STREAM("[Trajectory Controller]: Currently Trajectory Control is not active.");
+    return false;
+  }
+  if (! ac.isServerConnected() ){
+    ROS_ERROR_STREAM("[Trajectory Controller]: No action server is connected to publish trajectory. Trajectory is aborted!");
+    return false;
+  }
+
   trajectory_msgs::JointTrajectoryPoint TrajPoint;
   std::vector<trajectory_msgs::JointTrajectoryPoint> traj; //colection of TrajPoints
 
@@ -142,7 +295,14 @@ bool PublishTrajectory(){
 
 }
 
-// this is not optimal
+/**  @brief Get best solution from the IK solution set.
+ * 
+ * @note Not Optimal: Currently, the best solution is the one with the smallest euclidean distance
+ * in the joint state space. 
+ * 
+ * @param Qs starting position 
+ * @returns a vector with the "best" desired states.
+ */
 Eigen::Vector3d bestSol(Eigen::Vector3d Qs){
   double current_ang_dist;
   double min_ang_dist = 1000*M_PI;
@@ -168,102 +328,27 @@ Eigen::Vector3d bestSol(Eigen::Vector3d Qs){
   return ( L.getSols() ).col(index) ;
 }
 
-//Generate Q from Cartesian WP:
-bool generateQwp( Eigen::MatrixXd Xwp, Eigen::VectorXd twp){
-    ROS_INFO_STREAM("reached qwp!");
-
-  tw = twp; 
-  using Eigen::seq ;
-  using Eigen::seqN ;
-  using Eigen::all; 
-
-  const int N = Xwp.cols();
-  NumberOfWp = N;
-  bool  feasible_traj = true;
-
-  //In contrast to matlab code, here the starting point is NOT included!
-  Qw = Eigen::MatrixXd::Zero(3,N); 
-
-  // Find Qw ----------------------- (Part 1)
-  for (int i=0; i< N; i++){
-    if ( !L.IK( Xwp.col(i) )){ 
-      ROS_ERROR_STREAM("[Trajectory Controller]: The specified trajectory contains unreachable points. Dropping trajectory!");
-      feasible_traj = false;
-      break;
-    }
-
-    //Serially Check -> not optimal
-    if (i==0){
-        Qw.col(i) = bestSol( L.getState() );
-    }else{
-        Qw.col(i) = bestSol( Qw.col(i-1) );
-    }  
-  }
-
-  // Find Velocities:
-  Qtw = Eigen::MatrixXd::Zero(3,N); 
-
-  //Find mean Velocity  ----------------------- (Part 2)
-  Eigen::MatrixXd Ul = Eigen::MatrixXd::Zero(3,N-1);
-  Eigen::MatrixXd Ur = Ul;
-  Eigen::Vector3d MeanVel;
-
-  //Create a diagonal matrix with 1/tw_i, in order to create derivatives.
-  Eigen::MatrixXd _DT  = ( twp(seqN(1,N-1)) - twp(seqN(0,N-1)) ).asDiagonal() ;
-  for (int i=0;i<N-1;i++){
-    _DT(i,i) = 1/_DT(i,i);
-  }
-
-  // Create the differences: (l: left, r:right)
-  Ul(all,0) = Qw(all,1) - L.getState()/tw(0); 
-  Ul(all, seqN(1,N-2) ) << ( Qw(all,seqN(1,N-2)) - Qw(all,seqN(0,N-2)) )  * _DT(seqN(0,N-2),seqN(0,N-2));
-
-  Ur = ( Qw(all,seqN(1,N-1)) - Qw(all,seqN(0,N-1)) )  * _DT(seqN(0,N-1),seqN(0,N-1)); 
-
-  //calculate mean velocity;
-  for(int c=0;c<N-1;c++){
-    for(int r=0;r<3;r++){
-        MeanVel(r) = ( Ul(r,c)* Ur(r,c) >0 )? 0.5*( Ul(r,c)+ Ur(r,c)) : 0 ;
-    }
-    Qtw.col(c) = MeanVel;
-  }
-
-  return feasible_traj;
-}
-
-void  setActive(const bool & state ){ CurrentlyActive = state;}
-bool  getActive()                   { return CurrentlyActive;}
-
-private:
  //robot
   Leg& L; //reference to the robot.
 
   //Waypoints
   int NumberOfWp; 
-  Eigen::Matrix<double, 3,Eigen::Dynamic > Qw;
-  Eigen::Matrix<double, 3,Eigen::Dynamic > Qtw;
-  Eigen::Matrix<double, 1,Eigen::Dynamic > tw;
+  Eigen::Matrix3Xd Qw;   //Angular Position Waypoints
+  Eigen::Matrix3Xd Qtw;  //Angular Velocities at Waypoints
+  Eigen::VectorXd tw;    //timestamps for Waypoints
 
   //Ellipse parameters:
-  double a,b,DX,DY,dth;
-  int16_t times;
+  double a,b,DX,DY,dth;  //ellipse parameters
+  int16_t times;         //times to repeat an ellipse
 
   //Action
-  actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> ac; 
-  control_msgs::FollowJointTrajectoryGoal traj_goal;
-
-
-  // //Action msg
-  // control_msgs::FollowJointTrajectoryAction act_msg;
-  // control_msgs::FollowJointTrajectoryGoal traj_goal;
+  actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> ac;  //action client
+  control_msgs::FollowJointTrajectoryGoal traj_goal;                            //message for the trajectory
 
   // ROS
-  ros::Publisher TrajPub;
-  ros::ServiceServer EllipseServer;
-
+  ros::ServiceServer EllipseServer;  //Set Ellipse service  server
 
   //logic flag
-  bool isValid;  
   bool CurrentlyActive; 
   
 };

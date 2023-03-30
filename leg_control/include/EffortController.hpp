@@ -10,8 +10,19 @@
 //Effort Controllers
 #include <leg_control/wrench.h> 
 
+
+/** @brief Effort Controller class. 
+ * 
+ * 
+ */
 class EffortController{
 public:
+
+/** @brief Effort Controller class constructor. 
+ * 
+ * @param  LegObj reference to an instance of an  object from the class `Leg`. That way, the states are 
+ * linked in the different controllers  * 
+ */
 EffortController(Leg& LegObj): L(LegObj) {
     ros::NodeHandle NH; //Public Nodehanlde
 
@@ -31,6 +42,42 @@ EffortController(Leg& LegObj): L(LegObj) {
 
 };
 
+/** @brief Set  `CurrentlyActive` status. Useful for HLC.
+ * 
+ * 
+ * @param state true to activate, false to deactivate
+ */
+void  setActive(const bool & state ){ CurrentlyActive = state;}
+
+/** @brief Get  `CurrentlyActive` status. Useful for HLC.
+ * 
+ * @returns `CurrentlyActive`. It is true if  active, otherwise false .
+ */
+bool  getActive()                   { return CurrentlyActive;}
+
+/** @brief Service callback to set Position Goal. 
+ *
+ * @param req request part of the srv. 
+ * @param res response part of the srv. It is true if there is effort controller is currently active.
+ * @returns true if effort controller is currently active.
+ */
+bool setEffort(leg_control::wrench::Request & req,leg_control::wrench::Response & res){
+  if (!CurrentlyActive){
+     ROS_WARN_STREAM("[Effort Controller] Effort Control is not activated");
+     res.feasible = true;
+     return false;
+  }
+  // F from EE to world
+  Fd << req.fxw, req.fyw, req.fzw ;
+  res.feasible = true;
+  return true;
+
+}
+
+
+/** @brief Force control with gravity compensation
+ *
+ */
 void PublishEffort(){
   //required as there is no feedback loop by ros control
   // With gravity compensation
@@ -46,28 +93,12 @@ void PublishEffort(){
 
 }
 
-bool setEffort(leg_control::wrench::Request & req,leg_control::wrench::Response & res){
-  if (!CurrentlyActive){
-     ROS_WARN_STREAM("[High Level Controller] Effort Control is not activated");
-     res.feasible = true;
-     return false;
-  }
-  // F from EE to world
-  Fd << req.fxw, req.fyw, req.fzw ;
-  res.feasible = true;
-  return true;
-
-}
-
-void  setActive(const bool & state ){ CurrentlyActive = state;}
-bool  getActive()                   { return CurrentlyActive;}
-
 private:
  //robot
   Leg& L; //reference to the robot.
 
   Eigen::Vector3d Fd; 
-  std_msgs::Float64 t1,t2,t3;
+  std_msgs::Float64 t1,t2,t3; //torque command for each joint
 
   //logic flag
   bool isValid;  

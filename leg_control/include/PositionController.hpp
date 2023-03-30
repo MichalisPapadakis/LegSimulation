@@ -1,15 +1,30 @@
 #pragma once
 
-#include <ros/ros.h>
+// functionality
+#include <ros/ros.h> 
+
+//data types
+#include <eigen3/Eigen/Dense>
 #include <std_msgs/Float64.h>
 #include <control_msgs/JointControllerState.h>
-#include "leg/leg.hpp"
 #include "leg_control/pos.h"
-#include <eigen3/Eigen/Dense>
 
+//leg class
+#include "leg/leg.hpp"
+
+/** @brief Position Controller class. 
+ * 
+ * @note It is responsible for setting new position targets (in cartesian and joint angles space) through ros services
+ * 
+ */
 class PositionController{
 public:
 
+/** @brief Position Controller class constructor. 
+ * 
+ * @param  LegObj reference to an instance of an  object from the class `Leg`. That way, the states are 
+ * linked in the different controllers 
+ */
 PositionController(Leg & LegObj): 
 L(LegObj)  
 {
@@ -35,9 +50,18 @@ L(LegObj)
 
 }
 
+/** @brief Service callback to set Position Goal. 
+ * 
+ *  @note It contains a flag `cartesian`. If it is true, then a cartesian position is specified. Otherwise, 
+ * a position in joint state space is specified.
+ *
+ * @param req request part of the srv. 
+ * @param res response part of the srv. It is true if there is a solution to the IK problem or the controller is not activated 
+ * @returns true if the goal is reachable and position control is activated 
+ */
 bool setTarget(leg_control::pos::Request &req, leg_control::pos::Response &res){
   if (!CurrentlyActive){
-     ROS_WARN_STREAM("[High Level Controller] Position Control is not activated");
+     ROS_WARN_STREAM("[Position Controller]: Position Control is not activated");
      return false;
   }
 
@@ -49,11 +73,11 @@ bool setTarget(leg_control::pos::Request &req, leg_control::pos::Response &res){
     Xd(1) = req.yw;
     Xd(2) = req.zw;
 
-    ROS_INFO("[High Level Controller] Asking New Goal: xwd = %f, ywd = %f, zwd = %f \n",Xd(0),Xd(1),Xd(2));
+    ROS_INFO("[Position Controller] Asking New Goal: xwd = %f, ywd = %f, zwd = %f \n",Xd(0),Xd(1),Xd(2));
 
     //Call the Inverse Kinematics function to calculate new joint variables.
     if( ! L.IK(Xd) ){
-      ROS_WARN_STREAM("[High Level Controller] Goal out of reach");
+      ROS_WARN_STREAM("[Position Controller] Goal out of reach");
       res.feasible = false;
       return false;
     }
@@ -61,7 +85,7 @@ bool setTarget(leg_control::pos::Request &req, leg_control::pos::Response &res){
     // there are solution. Select best solution
     Qd = bestSol();
 
-    ROS_INFO("[High Level Controller] New Goal is: q1 = %f, q2 = %f, q3 = %f \n",Qd(0),Qd(1),Qd(2));
+    ROS_INFO("[Position Controller] New Goal is: q1 = %f, q2 = %f, q3 = %f \n",Qd(0),Qd(1),Qd(2));
 
 
   }else {
@@ -70,8 +94,8 @@ bool setTarget(leg_control::pos::Request &req, leg_control::pos::Response &res){
     Qd(2) = req.zw;
     Xd = L.DK(Qd);
 
-    ROS_INFO("[High Level Controller] Asking New Goal in joint state space: q1 = %f, q2 = %f, q3 = %f \n",Qd(0),Qd(1),Qd(2));
-    ROS_INFO("[High Level Controller] The new Goal is: xwd = %f, ywd = %f, zwd = %f \n",Xd(0),Xd(1),Xd(2));
+    ROS_INFO("[Position Controller] Asking New Goal in joint state space: q1 = %f, q2 = %f, q3 = %f \n",Qd(0),Qd(1),Qd(2));
+    ROS_INFO("[Position Controller] The new Goal is: xwd = %f, ywd = %f, zwd = %f \n",Xd(0),Xd(1),Xd(2));
 
   }
 
@@ -92,34 +116,52 @@ bool setTarget(leg_control::pos::Request &req, leg_control::pos::Response &res){
 
 };
 
+/** @brief Set  `CurrentlyActive` status. 
+ * 
+ *  @note In order to not accept new set points and send commands to inactive controllers
+ * 
+ * @param state true to activate, false to deactivate
+ */
 void  setActive(const bool & state ){ CurrentlyActive = state;}
 
+/** @brief Get  `CurrentlyActive` status. Usefull for the HLC.
+ * 
+ * @returns `CurrentlyActive`. It is true if  active, otherwise false .
+ */
 bool  getActive()                   { return CurrentlyActive;}
 
 private: 
 
-// this is not optimal
+/** @brief Get best solution from the IK solution set
+ * 
+ * @note Not Optimal: Currently, the best solution is the one with the smallest euclidean distance
+ * in the joint state space. 
+ * 
+ * @returns a vector with the "best" desired states.
+ */
 Eigen::Vector3d bestSol(){
-  // Eigen::VectorXd Dists(nSols);
 
   double current_ang_dist;
   double min_ang_dist = 1000*M_PI;
+
   int index = 0;
   int nSols = L.get_nSols();
-  Eigen::Vector3d Qs;
+  
+  Eigen::Vector3d Qd;
 
+  //find minumum distance:
   for (int i = 0; i<nSols ; i++){
 
-    Qs << ( L.getSols() ).col(i) ;
-    ROS_DEBUG_STREAM(Qs <<  std::endl);
+    Qd << ( L.getSols() ).col(i) ;
+    current_ang_dist = fabs ( L.currentDist( Qd).norm() );
 
-    current_ang_dist = fabs ( L.currentDist( Qs).norm() );
     if (current_ang_dist < min_ang_dist ) {
       index = i;
       min_ang_dist  = current_ang_dist;
     }
   }
 
+  //return minum distance
   return ( L.getSols() ).col(index) ;
 }
 
