@@ -35,7 +35,7 @@ int main(int argc, char **argv)
 
 
   if (client.call(CS)){
-    ROS_INFO("SelectController: %s]",s);
+    ROS_INFO_STREAM("SelectController: ]"<<s);
   }else{
     ROS_ERROR("Failed to call service to set new controller");
     return 1;

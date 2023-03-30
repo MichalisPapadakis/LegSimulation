@@ -12,6 +12,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   leg_description
   message_generation
+  actionlib 
+
 )
 
 ## System dependencies are found with CMake's conventions
@@ -59,6 +61,7 @@ add_service_files(
   FILES
   pos.srv
   ControllerSelector.srv
+  ellipse.srv
   wrench.srv
   # Service1.srv
   # Service2.srv
@@ -75,6 +78,7 @@ add_service_files(
 generate_messages(
   DEPENDENCIES
   std_msgs  # Or other packages containing msgs
+  trajectory_msgs
 )
 
 ################################################
@@ -120,7 +124,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -142,6 +146,7 @@ add_executable(leg_goal_set src/leg_goal_set.cpp)
 add_executable(legHLC src/LegHLC.cpp)
 add_executable(ControllerSelector src/ControllerSelector.cpp)
 add_executable(SetEffort src/SetEffort.cpp)
+add_executable(SetEllipse src/SetEllipse.cpp)
 
 
 ## Rename C++ executable without prefix
@@ -160,6 +165,7 @@ target_link_libraries(leg_goal_set ${catkin_LIBRARIES}   )
 target_link_libraries(legHLC ${catkin_LIBRARIES}   )
 target_link_libraries(ControllerSelector ${catkin_LIBRARIES}   )
 target_link_libraries(SetEffort ${catkin_LIBRARIES}   )
+target_link_libraries(SetEllipse ${catkin_LIBRARIES}   )
 #############
 ## Install ##
 #############
