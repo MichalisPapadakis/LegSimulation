@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   leg_description
   message_generation
   actionlib 
+  gazebo_msgs
 
 )
 
@@ -142,11 +143,12 @@ include
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(leg_position_controller src/leg_position_controller.cpp)
-add_executable(leg_goal_set src/leg_goal_set.cpp)
-add_executable(legHLC src/LegHLC.cpp)
-add_executable(ControllerSelector src/ControllerSelector.cpp)
-add_executable(SetEffort src/SetEffort.cpp)
-add_executable(SetEllipse src/SetEllipse.cpp)
+add_executable(legGoalSet src/legGoalSet.cpp)
+add_executable(legHLC src/legHLC.cpp)
+add_executable(legControllerSelector src/legControllerSelector.cpp)
+add_executable(legSetEffort src/legSetEffort.cpp)
+add_executable(legSetEllipse src/legSetEllipse.cpp)
+add_executable(legContact src/legContact.cpp)
 
 
 ## Rename C++ executable without prefix
@@ -161,11 +163,13 @@ add_executable(SetEllipse src/SetEllipse.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(leg_position_controller ${catkin_LIBRARIES}   )
-target_link_libraries(leg_goal_set ${catkin_LIBRARIES}   )
+target_link_libraries(legGoalSet ${catkin_LIBRARIES}   )
 target_link_libraries(legHLC ${catkin_LIBRARIES}   )
-target_link_libraries(ControllerSelector ${catkin_LIBRARIES}   )
-target_link_libraries(SetEffort ${catkin_LIBRARIES}   )
-target_link_libraries(SetEllipse ${catkin_LIBRARIES}   )
+target_link_libraries(legControllerSelector ${catkin_LIBRARIES}   )
+target_link_libraries(legSetEffort ${catkin_LIBRARIES}   )
+target_link_libraries(legSetEllipse ${catkin_LIBRARIES}   )
+target_link_libraries(legContact ${catkin_LIBRARIES}   )
+
 #############
 ## Install ##
 #############

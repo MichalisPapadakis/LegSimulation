@@ -3,7 +3,7 @@
 <!-- ARGS -->
 <arg name="rvizConfig" default="$(find leg_control)/rvizConfigs/config1.rviz" />
 <arg name="model"      default="$(find leg_description)/urdf/my_leg.xacro" />  
-<!-- <arg name="half_width"      default="0.1" /> -->
+<arg name="end_effector_distance"      default="0.223" />
 
 <!-- PARAMETERS -->
 <param name="robot_description" command="$(find xacro)/xacro $(arg model)" />
@@ -36,7 +36,7 @@
         args=" -urdf -model robot -param robot_description" respawn="false" output="screen" />
 
 <!-- Static transform -->
-<!-- <node pkg="tf2_ros" type="static_transform_publisher" name="end_effector_broadcaster" args="$(arg half_width) 0 0 0 0 0 1 end_effector_link end_effector" /> -->
+<node pkg="tf2_ros" type="static_transform_publisher" name="end_effector_broadcaster" args="$(arg end_effector_distance) 0 0 0 0 0 1 link3 end_effector" />
 
 <!-- High Level Controller -->
 <node name="HLcontroller" pkg="leg_control" type="legHLC" output="screen" >
