@@ -36,7 +36,12 @@ ac("leg/Trajectory_Controller/follow_joint_trajectory",true)
   //Start as Inactive Controller
   CurrentlyActive = false;
 
-  //
+  //create timer to repeat trajectories
+  //default time is 5s
+  PublishingTimer = NH.createTimer(ros::Duration(5),&TrajectoryController::PublishingCallback,this);
+  PublishingTimer.stop(); //start inactive
+
+  //Set Ellipse Service Server
   EllipseServer = NH.advertiseService("SetEllipse",&TrajectoryController::SetEllipse, this);
 
 };
@@ -78,16 +83,19 @@ void TestTraj(){
 
 }
 
-/** @brief Set ellipse parameters through the service call `SetEllipse`
+/** @brief Set ellipse parameters through the service call `SetEllipse`. 
+ * Also set number of repetitions and duration of the ellipse.
  * 
- * @note Generation is based on the polar form of an ellipse. Eigen::array is used for element-wise division and multipliation. 
+ * @note The class attributes that are relevant to ellipse parameters are populated. Publish trajectory is invoked to populate the message
+ * and send the initial repeatition. If `times`>1, then a timer is started to periodically republish the trajectory. 
  * Failure  may be unsuccesfull due to:
  * 1) failure of the ellipse waypoint generation,
  * 2) due to failure in publishing the trajectory or
  * 3) due to the trajectory controller being inactive
+ * 4) due to inappropriate ellipse parameters
  * 
  * @returns true if the waypoint generation is succesful, false otherwise.
- * @throws `ros::InvalidParameterException` if a,b or times are not strictly positive
+ * @throws `ros::InvalidParameterException` if a,b,period or times are not strictly positive
  */
 bool SetEllipse(leg_control::ellipse::Request& req,leg_control::ellipse::Response & res){
   if (! CurrentlyActive) {
@@ -98,18 +106,18 @@ bool SetEllipse(leg_control::ellipse::Request& req,leg_control::ellipse::Respons
 
   a = req.a;   b = req.b; times = req.times;
   DX = req.DX; DY = req.DY; dth = req.dth;
-
+  period = req.Period;
 
   try {
     if (! (a>0)     ) throw  ros::InvalidParameterException("[Trajectory Controller]: `a` must be positive") ;
     if (! (b > 0)   ) throw  ros::InvalidParameterException("[Trajectory Controller]: `b` must be positive") ;
     if (!(times > 0)) throw  ros::InvalidParameterException("[Trajectory Controller]: `times` must be positive") ;
+    if (!(period > 0))throw  ros::InvalidParameterException("[Trajectory Controller]: `period` must be positive") ;
   } catch (const  ros::InvalidParameterException & e){
     ROS_ERROR_STREAM( e.what() ) ;
     res.feasible=false;
     return false;
   }
-
 
   if (! GenerateVerticalEllipse()) {
     ROS_INFO_STREAM("[Trajectory Controller]: Problem with ellipse waypoint generation");
@@ -117,19 +125,60 @@ bool SetEllipse(leg_control::ellipse::Request& req,leg_control::ellipse::Respons
     return false;
   }
 
+  // initial call to populate the `traj` message and send first (and maybe only) trajectory:
   if (! PublishTrajectory()){
     ROS_INFO_STREAM("[Trajectory Controller]: Problem with ellipse waypoint publishing");
     res.feasible=false;
     return false;
 
   }
-  
+  counter = 1; 
+  ROS_INFO("[Trajectory Controller]: Started ellipse with a: %f, b: %f, DX: %f, Dy: %f, dth: %f",a,b,DX,DY,dth);
+
+  //start timer, if we want the trajectory to repeat itself
+  if (times > 1){
+    PublishingTimer.setPeriod(ros::Duration(period));
+    PublishingTimer.start();
+  }
+
   res.feasible=true;
   return true;
 
 }
 
 private:
+
+/** @brief `PublishingTimer` Callback function. For repeating a trajectory. 
+ * 
+ * @note To repeat a trajectory, after the message `traj` is populated in `PublishTrajectory`. A `ros::timer` callback function is invoked.
+ * It checks whether the controller is still active, and the service server is connected. If both conditions are met, it send the trajectory
+ * and increments the counter variable.  Finally, if the trajectory is repeated the specified number of times, the timer is stopped. 
+ * 
+ * @throws `ros::Exception` if the controller is not active (it was externally stopped) or (the action server is down). 
+ */
+void PublishingCallback(const ros::TimerEvent& ){ //supressing parameters in current implementation
+  // checks
+  try {
+    if ( ! CurrentlyActive)        throw  ros::Exception("[Trajectory Controller]: Currently Trajectory Control is not active. \n[Trajectory Controller]: Trajectory was not executed all the specified times ") ;
+    if (! ac.isServerConnected() ) throw  ros::Exception("[Trajectory Controller]: No action server is connected to publish trajectory. Trajectory is aborted!") ;
+  } catch (const  ros::Exception & e){
+    ROS_ERROR_STREAM( e.what() ) ;
+    PublishingTimer.stop();
+    return; 
+  }
+
+  // publish and increment timer:
+  traj_goal.trajectory.header.stamp = ros::Time::now(); //set current time
+  ac.sendGoal(traj_goal); 
+  counter ++; 
+
+  //stop timer if counter == timers:
+  if (counter == times){
+    ROS_INFO_STREAM("Stop publishing trajectory");
+    PublishingTimer.stop();
+  }
+
+}
 
 /** @brief Generate Cartesian waypoint for a vertical ellipse from the ellipse parameter passed by the user.
  * 
@@ -160,7 +209,7 @@ bool GenerateVerticalEllipse(){
   X.row(1) = ( r*th.cos() + DX ).matrix();
   X.row(2) = ( r*th.sin() + DY ).matrix();
 
-  Eigen::VectorXd t = Eigen::ArrayXd::LinSpaced(NpointsE,5/(NpointsE-1),5).matrix();
+  Eigen::VectorXd t = Eigen::ArrayXd::LinSpaced(NpointsE,period/(NpointsE-1),period).matrix();
 
   if (! generateQwp(X,t) ) {
     
@@ -261,7 +310,7 @@ bool generateQwp( Eigen::MatrixXd Xwp, Eigen::VectorXd twp){
  * 1) The action server is not running
  * 2) The trajectory controller in not active.
  * 
- * @returns true if publishing is successful.
+ * @returns true if publishing is successful. False if unsuccessful or the trajectory is publisher the require
  */
 bool PublishTrajectory(){
   if ( ! CurrentlyActive) {
@@ -338,8 +387,9 @@ Eigen::Vector3d bestSol(Eigen::Vector3d Qs){
   Eigen::VectorXd tw;    //timestamps for Waypoints
 
   //Ellipse parameters:
-  double a,b,DX,DY,dth;  //ellipse parameters
+  double a,b,DX,DY,dth,period;  //ellipse parameters
   int16_t times;         //times to repeat an ellipse
+  int16_t counter;       //counter for the trajectories
 
   //Action
   actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> ac;  //action client
@@ -347,6 +397,7 @@ Eigen::Vector3d bestSol(Eigen::Vector3d Qs){
 
   // ROS
   ros::ServiceServer EllipseServer;  //Set Ellipse service  server
+  ros::Timer PublishingTimer; 
 
   //logic flag
   bool CurrentlyActive; 

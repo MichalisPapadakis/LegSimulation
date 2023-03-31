@@ -52,6 +52,33 @@ HLC(): PC(this-> L), TC(this->L), EC(this->L) {
 
 }
 
+/** @brief Loop function of HLC. 
+ * 
+ * @note If some functionality of the LLC must be executed in each loop, this functionality is accesed by calling public functions of the LLCs
+ * in this loop.  
+ * 
+ */
+void Loop(){
+   switch ( CurrentMode ){
+    case 1:
+
+        break;
+    case 2:
+
+        break;
+    case 3:
+        EC.PublishEffort();
+       break; 
+    default:
+        break;
+
+   }
+
+
+}
+
+private: 
+
 /** @brief Load Controllers helper function to automate the load controller service. Informs the user in case of problem.
  * 
  * @param str Controller name
@@ -131,7 +158,7 @@ bool SelectController(leg_control::ControllerSelector::Request &req, leg_control
 /** @brief Start Position Controllers.
  * 
  * @note Set the `CurrentlyActive` status of the controllers. 
- * Publish the messages 
+ * Publish the messages to switch controller and inform the user. 
  * 
  */
 void StartPosition(){
@@ -175,6 +202,12 @@ if ( CM_switcher.call(Sw) ){
 
 }
 
+/** @brief Start Trajectory Controller.
+ * 
+ * @note Set the `CurrentlyActive` status of the controllers. 
+ * Publish the messages to switch controller and inform the user. 
+ * 
+ */
 void StartTrajectory(){
 PC.setActive(false); //De-Activate Position Module
 TC.setActive(true);  //Activate Trajectory Module
@@ -215,6 +248,12 @@ if ( CM_switcher.call(Sw) ){
 
 }
 
+/** @brief Start Effort Controllers.
+ * 
+ * @note Set the `CurrentlyActive` status of the controllers. 
+ * Publish the messages to switch controller and inform the user. 
+ * 
+ */
 void StartEffort(){
 PC.setActive(false); //De-Activate Position Module
 TC.setActive(false); //De-Activate Trajectory Module
@@ -254,19 +293,6 @@ if ( CM_switcher.call(Sw) ){
 
 
 }
-
-bool getValid(){
-  return isValid;
-}
-
-//Looping
-void Loop(){
-  if (CurrentMode == 3){
-    EC.PublishEffort();
-  }
-
-}
-private: 
 
 // Class variables
 #pragma region
