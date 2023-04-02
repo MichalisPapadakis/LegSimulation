@@ -280,7 +280,7 @@
 
 <gazebo reference="link3" >
   <material> Gazebo/Orange </material>
-  <!-- <collision>
+  <collision>
     <surface>
       <friction>
       <torsional>
@@ -288,7 +288,7 @@
       </torsional>
         <ode>
           <mu>0.7</mu>
-          <mu2>1e-3</mu2>
+          <!-- <mu2>1e-3</mu2> -->
         </ode>
       </friction>
       <contact>
@@ -299,7 +299,7 @@
         </ode>
       </contact>
     </surface>  
-  </collision> -->
+  </collision>
   <sensor type="contact" name="wall_contact_sensor">
         <update_rate>1000.0</update_rate>
         <always_on>1</always_on>
@@ -311,7 +311,7 @@
           <alwaysOn>true</alwaysOn>
           <updateRate>1000.0</updateRate>
           <bumperTopicName>/end_effector_collision</bumperTopicName>
-          <!-- <frameName></frameName> -->
+          <frameName>world</frameName>
         </plugin>
       </sensor>
 

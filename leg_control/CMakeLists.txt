@@ -14,7 +14,9 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   actionlib 
   gazebo_msgs
-
+  tf2
+  tf2_ros
+  geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
