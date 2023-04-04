@@ -10,7 +10,7 @@
 <rosparam file="$(find leg_control)/launch/totalControl.yaml" command="load"/>
 
 <!-- NODES -->
-<node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizConfig)"/>
+<!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizConfig)"/> -->
 
 <node name="ControllerManager" pkg="controller_manager" type="spawner" respawn="false"
 	output="screen" ns="/leg" 
@@ -20,8 +20,8 @@
     <remap from="/joint_states" to="/leg/joint_states"/>
 </node>
 
-<node name="rqt" pkg="rqt_gui" type="rqt_gui" />
-<!-- args=" - -perspective-file $(find my_2link)/rqtPerspectives/2linkGUI.perspective"/> -->
+<node name="rqt" pkg="rqt_gui" type="rqt_gui" 
+args=" --perspective-file $(find leg_control)/rqt_perspectives/LegGui.perspective"/>
 
 <!-- GAZEBO -->
 <include file="$(find gazebo_ros)/launch/empty_world.launch">

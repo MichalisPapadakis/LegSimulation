@@ -251,7 +251,6 @@
   <axis rpy = "0 0 0" xyz="0 0 1"/>
   <origin rpy = "0 0 0" xyz="${L23} 0  0"/>
   <limit lower="${-link3_angle_limit}" upper="${link3_angle_limit}" effort="${effort_limit*kr3}" velocity="${velocity_limit/kr3}" />
-
 </joint> 
 
 <transmission name="link2_link3_trans">
@@ -315,6 +314,22 @@
         </plugin>
       </sensor>
 
+</gazebo>
+
+<gazebo>
+<physics type="ode" >
+  <ode>
+      <solver>
+      <type>world</type>
+        <!-- <friction_model>cone_model</friction_model> -->
+
+        <!-- Only Important in quick solver -->
+        <!-- <iters>100</iters>  -->
+        <!-- <sor>1 </sor> -->
+      </solver>
+  </ode>
+  <max_step_size>0.001</max_step_size>
+</physics>
 </gazebo>
 
 <!-- Gazebo -->
