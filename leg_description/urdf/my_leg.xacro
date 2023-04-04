@@ -18,6 +18,10 @@
   <color rgba="0.3 0.3 0.3 1"/>
 </material>
 
+<material name="orange">
+  <color rgba="1 0.5 0 1"/>
+</material>
+
 <!-- Defining macros -->
 <xacro:property name="BaseHeight" value="0.4" />
 
@@ -80,7 +84,7 @@
         <mesh scale=".001 .001 .001" filename="package://leg_description/meshes/Base.STL" />
     </geometry>
     <origin rpy="0 0 0" xyz="0 0 0"/>
-    <material name="DarkGrey"/>
+    <material name="blue"/>
   </visual>
   <collision>
     <geometry>
@@ -212,7 +216,7 @@
         <mesh scale=".001 .001 .001" filename="package://leg_description/meshes/link3.STL" />
     </geometry>
     <origin rpy="0 0 0" xyz="0 0 0"/>
-    <material name="grey"/>
+    <material name="orange"/>
   </visual>
   <collision name="link3_leg">
     <geometry>
@@ -274,7 +278,7 @@
 </gazebo>
 
 <gazebo reference="link2" >
-  <material> Gazebo/Grey  </material>
+  <material> Gazebo/DarkGrey  </material>
 </gazebo>
 
 <gazebo reference="link3" >
