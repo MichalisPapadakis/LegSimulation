@@ -81,7 +81,7 @@ bool setEffort(leg_control::wrench::Request & req,leg_control::wrench::Response 
 void PublishEffort(){
   //required as there is no feedback loop by ros control
   // With gravity compensation
-  Eigen::Vector3d t = L.Calculate_Jv().transpose() * Fd + L.CalculateG();
+  Eigen::Vector3d t = L.Calculate_Jv().transpose() * Fd ;//+ L.CalculateG();
   t1.data = t(0);
   t2.data = t(1);
   t3.data = t(2);
@@ -101,7 +101,6 @@ private:
   std_msgs::Float64 t1,t2,t3; //torque command for each joint
 
   //logic flag
-  bool isValid;  
   bool CurrentlyActive; 
 
   // Ros functionality:

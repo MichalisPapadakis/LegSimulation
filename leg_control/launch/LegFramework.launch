@@ -39,6 +39,9 @@ args=" --perspective-file $(find leg_control)/rqt_perspectives/LegGui.perspectiv
 <node pkg="tf2_ros" type="static_transform_publisher" name="end_effector_broadcaster" args="$(arg end_effector_distance) 0 0 0 0 0 1 link3 end_effector" />
 
 <!-- High Level Controller -->
+<node name="legContact" pkg="leg_control" type="legContact" output="screen" > </node>
+
+<!-- High Level Controller -->
 <node name="HLcontroller" pkg="leg_control" type="legHLC" output="screen" >
     <!-- <rosparam file="$(find leg_description)/launch/robot.yaml" command="load" /> -->
 </node>

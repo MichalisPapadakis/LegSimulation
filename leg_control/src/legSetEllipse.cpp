@@ -18,8 +18,8 @@ int main(int argc, char **argv)
   leg_control::ellipse ellipse;
   ellipse.request.a     = atof(argv[1]);
   ellipse.request.b     = atof(argv[2]);
-  ellipse.request.DX    = atof(argv[3]);
-  ellipse.request.DY    = atof(argv[4]);
+  ellipse.request.DY    = atof(argv[3]);
+  ellipse.request.DZ    = atof(argv[4]);
   ellipse.request.dth   = atof(argv[5]);
   ellipse.request.times = atof(argv[6]);
 

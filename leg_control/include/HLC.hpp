@@ -308,8 +308,6 @@ if ( CM_switcher.call(Sw) ){
   //Control Mode: { 1-> Pos, 2-> Traj, 3-> Force }
   uint8_t CurrentMode;  
 
-  //logic flag
-  bool isValid;  
   
   // Ros Functionality: 
   ros::NodeHandle NH;             // Public Nodehandle

@@ -37,25 +37,32 @@ public:
  */
 void init();
 
+private:
 /** @brief Callback function to get state of first joint
  * 
  */
 void PoseCallback1(const control_msgs::JointControllerState::ConstPtr& msg) ;
+
 /** @brief Callback function to get state of second joint
  * 
  */
 void PoseCallback2(const control_msgs::JointControllerState::ConstPtr& msg) ;
+
 /** @brief Callback function to get state of third joint
  * 
  */
 void PoseCallback3(const control_msgs::JointControllerState::ConstPtr& msg) ;
 
+
+
+#pragma endregion
+
+public: 
 /** @brief Function to inform user of the current state of the robot. Only prints!
  * 
  */
 void Querry_state();
 
-#pragma endregion
 
 // Robot Kinematics:
 #pragma region

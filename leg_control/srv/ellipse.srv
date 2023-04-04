@@ -1,7 +1,7 @@
 float32 a
 float32 b
-float32 DX
 float32 DY
+float32 DZ
 float32 dth
 float32 Period
 int16 times

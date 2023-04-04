@@ -105,7 +105,7 @@ bool SetEllipse(leg_control::ellipse::Request& req,leg_control::ellipse::Respons
   }
 
   a = req.a;   b = req.b; times = req.times;
-  DX = req.DX; DY = req.DY; dth = req.dth;
+  DY = req.DY; DZ = req.DZ; dth = req.dth;
   period = req.Period;
 
   try {
@@ -133,7 +133,7 @@ bool SetEllipse(leg_control::ellipse::Request& req,leg_control::ellipse::Respons
 
   }
   counter = 1; 
-  ROS_INFO("[Trajectory Controller]: Started ellipse with a: %f, b: %f, DX: %f, Dy: %f, dth: %f",a,b,DX,DY,dth);
+  ROS_INFO("[Trajectory Controller]: Started ellipse with a: %f, b: %f, DY: %f, DZ: %f, dth: %f",a,b,DY,DZ,dth);
 
   //start timer, if we want the trajectory to repeat itself
   if (times > 1){
@@ -206,8 +206,8 @@ bool GenerateVerticalEllipse(){
 
 
   X.row(0) = Eigen::MatrixXd::Constant(1,NpointsE,Xo);
-  X.row(1) = ( r*th.cos() + DX ).matrix();
-  X.row(2) = ( r*th.sin() + DY ).matrix();
+  X.row(1) = ( r*th.cos() + DY ).matrix();
+  X.row(2) = ( r*th.sin() + DZ ).matrix();
 
   Eigen::VectorXd t = Eigen::ArrayXd::LinSpaced(NpointsE,period/(NpointsE-1),period).matrix();
 
@@ -387,7 +387,7 @@ Eigen::Vector3d bestSol(Eigen::Vector3d Qs){
   Eigen::VectorXd tw;    //timestamps for Waypoints
 
   //Ellipse parameters:
-  double a,b,DX,DY,dth,period;  //ellipse parameters
+  double a,b,DY,DZ,dth,period;  //ellipse parameters
   int16_t times;         //times to repeat an ellipse
   int16_t counter;       //counter for the trajectories
 

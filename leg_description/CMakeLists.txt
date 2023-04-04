@@ -10,21 +10,7 @@ project(leg_description)
 find_package(catkin REQUIRED COMPONENTS
   rviz
   xacro
-  # cmake_modules
-  # angles 
 )
-
-
-# find_package( Eigen3 3.3 REQUIRED )
-
-# if(NOT EXISTS "${Eigen3_INCLUDE_DIRS}")
-#     message(FATAL_ERROR "File or directory ${Eigen3_INCLUDE_DIRS} does not exist !")
-#   endif()
-
-# ############################################## 
-
-
-
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -131,7 +117,6 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  # ${Eigen3_INCLUDE_DIRS}
 )
 
 # include_directories(${Eigen3_INCLUDE_DIRS})
@@ -143,7 +128,6 @@ add_library(leg STATIC
 )
 
 target_link_libraries(leg ${catkin_LIBRARIES} )
-# target_link_libraries(leg_kinematics ${catkin_LIBRARIES} Eigen3::Eigen)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries

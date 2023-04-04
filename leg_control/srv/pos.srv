@@ -1,6 +1,6 @@
+bool    cartesian
 float32 xw
 float32 yw
 float32 zw
-bool    cartesian
 ---
 bool feasible 
