@@ -26,7 +26,7 @@
 <xacro:property name="L01" value="0.07763" />
 <xacro:property name="L12" value="0.11208" />
 <xacro:property name="L23" value="0.2531" />
-<xacro:property name="L3E" value="0.2455" />
+<xacro:property name="L3E" value="0.223" />
 
 <!-- Connectors -->
 <xacro:property name="connectorL_1" value="0.004" />
@@ -218,7 +218,7 @@
     <geometry>
       <cylinder radius="${legD/2}" length="${L3E- (footD/2) }"/>
     </geometry>
-    <origin rpy="0 ${pi/2} 0" xyz="${(L3E- (footD/2) )/2  } 0 0"/>
+    <origin rpy="0 ${pi/2} 0" xyz="${L3E/2  } 0 0"/>
   </collision>
   <collision name="link3_knee">
     <geometry>
@@ -230,7 +230,7 @@
     <geometry>
       <sphere radius="${footD/2}"/>
     </geometry>
-    <origin rpy="0 0 0" xyz="${ L3E- footD/2  } 0 0"/>
+    <origin rpy="0 0 0" xyz="${ L3E } 0 0"/>
   </collision>
   <inertial>
     <mass value="0.36814" />
