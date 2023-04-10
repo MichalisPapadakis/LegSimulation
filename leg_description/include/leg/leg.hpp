@@ -2,6 +2,7 @@
 
 
 #include <ros/ros.h>
+#include <sensor_msgs/JointState.h>
 #include <control_msgs/JointControllerState.h>
 #include <eigen3/Eigen/Dense>
 #include <angles/angles.h>
@@ -22,7 +23,7 @@ class exIK :public ros::Exception {
  * Class containing important geometric attributes and geometric-related functions for the robotic leg
  *
  * Leg class subscribes to the relevant topics to read the joint states of the robot and contains all 
- * usefull kinematics functions (IK: inverse kinematics, DK: Direct Kinematics, Calculate_Jv: Geometric Jacobian) .
+ * usefull kinematics functions (`IK`: inverse kinematics, `DK`: Direct Kinematics, Calculate_Jv: Geometric Jacobian) .
  * The solutions from the last IK call are saves as a class attribute.
  * 
  */
@@ -41,18 +42,7 @@ private:
 /** @brief Callback function to get state of first joint
  * 
  */
-void PoseCallback1(const control_msgs::JointControllerState::ConstPtr& msg) ;
-
-/** @brief Callback function to get state of second joint
- * 
- */
-void PoseCallback2(const control_msgs::JointControllerState::ConstPtr& msg) ;
-
-/** @brief Callback function to get state of third joint
- * 
- */
-void PoseCallback3(const control_msgs::JointControllerState::ConstPtr& msg) ;
-
+void PoseCallback(const sensor_msgs::JointState::ConstPtr& msg) ;
 
 
 #pragma endregion
@@ -119,7 +109,6 @@ Eigen::Vector3d CalculateG();
 
 /** @brief Geometric Jacobian using current position
  *
- * @throws exIK If there is no solution to the inverse kinematics problem
  * @returns `Jv` 
  */
 Eigen::Matrix3d  Calculate_Jv();
