@@ -7,13 +7,13 @@ exIK::exIK(const std::string& str):
 void Leg::init(){
     //Set up state subsribers
     ros::NodeHandle n12;
-    Joint1_pos = n12.subscribe("/leg/joint1_position_controller/state",1000,&Leg::PoseCallback1,this);
+    Joint1_pos = n12.subscribe("/leg/joint_states",1000,&Leg::PoseCallback,this);
 
-    ros::NodeHandle n22;
-    Joint2_pos = n22.subscribe("/leg/joint2_position_controller/state",1000,&Leg::PoseCallback2,this);
+    // ros::NodeHandle n22;
+    // Joint2_pos = n22.subscribe("/leg/joint2_position_controller/state",1000,&Leg::PoseCallback2,this);
 
-    ros::NodeHandle n32;
-    Joint3_pos = n32.subscribe("/leg/joint2_position_controller/state",1000,&Leg::PoseCallback3,this);
+    // ros::NodeHandle n32;
+    // Joint3_pos = n32.subscribe("/leg/joint3_position_controller/state",1000,&Leg::PoseCallback3,this);
 
     q(0) = 0; q(1)=0; q(2)=0;
 }
@@ -21,27 +21,12 @@ void Leg::init(){
 void Leg::Querry_state(){
     ROS_INFO_STREAM("[Leg: ]  Current States: q1 = "<< q(0) <<", q2 = "<< q(1) <<", q3 = "<< q(2) <<"\n" );
 };
-//Callback function to be changed
-#pragma region
-void Leg::PoseCallback1(const control_msgs::JointControllerState::ConstPtr& msg) {
-   q(0) = msg->process_value; 
+
+void Leg::PoseCallback(const sensor_msgs::JointState::ConstPtr& msg) {
+   q(0) = msg->position[0]; 
+   q(1) = msg->position[1]; 
+   q(2) = msg->position[2]; 
 }
-
-void Leg::PoseCallback2(const control_msgs::JointControllerState::ConstPtr& msg){
-   q(1) = msg->process_value; 
-}
-
-void Leg::PoseCallback3(const control_msgs::JointControllerState::ConstPtr& msg){
-   q(2) = msg->process_value; 
-}
-
-// void PoseCallback(const control_msgs::JointControllerState::ConstPtr& msg,double q1){
-//    q1 = msg->process_value; 
-// }
-
-// funCall = std::bind(RobotController::PoseCallback,q1); 
-#pragma endregion
-  
 
 
 Eigen::Vector3d Leg::DK(Eigen::Vector3d Q){

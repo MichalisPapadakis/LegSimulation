@@ -17,6 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2
   tf2_ros
   geometry_msgs
+  std_srvs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -151,6 +152,7 @@ add_executable(legControllerSelector src/legControllerSelector.cpp)
 add_executable(legSetEffort src/legSetEffort.cpp)
 add_executable(legSetEllipse src/legSetEllipse.cpp)
 add_executable(legContact src/legContact.cpp)
+add_executable(legSim src/legSim.cpp)
 
 
 ## Rename C++ executable without prefix
@@ -171,6 +173,7 @@ target_link_libraries(legControllerSelector ${catkin_LIBRARIES}   )
 target_link_libraries(legSetEffort ${catkin_LIBRARIES}   )
 target_link_libraries(legSetEllipse ${catkin_LIBRARIES}   )
 target_link_libraries(legContact ${catkin_LIBRARIES}   )
+target_link_libraries(legSim ${catkin_LIBRARIES}   )
 
 #############
 ## Install ##

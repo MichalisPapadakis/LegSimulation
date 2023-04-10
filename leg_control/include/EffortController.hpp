@@ -68,7 +68,10 @@ bool setEffort(leg_control::wrench::Request & req,leg_control::wrench::Response 
      return false;
   }
   // F from EE to world
-  Fd << req.fxw, req.fyw, req.fzw ;
+  Fd(0) = req.fxw;
+  Fd(1) = req.fyw;
+  Fd(2) = req.fzw;
+ 
   res.feasible = true;
   return true;
 
@@ -81,7 +84,7 @@ bool setEffort(leg_control::wrench::Request & req,leg_control::wrench::Response 
 void PublishEffort(){
   //required as there is no feedback loop by ros control
   // With gravity compensation
-  Eigen::Vector3d t = L.Calculate_Jv().transpose() * Fd ;//+ L.CalculateG();
+  Eigen::Vector3d t = ( ( (L.Calculate_Jv()).transpose() )* Fd ) + L.CalculateG();
   t1.data = t(0);
   t2.data = t(1);
   t3.data = t(2);
