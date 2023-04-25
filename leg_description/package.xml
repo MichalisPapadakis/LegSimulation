@@ -73,8 +73,8 @@
 
   <!-- Test if delete: -->
   <depend> eigen </depend>
-  <!-- <exec_depend> angles </exec_depend>
-  <build_depend> angles </build_depend> -->
+  <exec_depend> angles </exec_depend>
+  <build_depend> angles </build_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
