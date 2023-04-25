@@ -96,7 +96,7 @@ ros::init(argc, argv, "ContactHandler");
 
 ContactMsgHandler CH;
 
-ros::Rate r(100);
+ros::Rate r(1000);
 
 while(ros::ok())
 {

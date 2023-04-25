@@ -291,7 +291,7 @@
       </torsional>
         <ode>
           <mu>0.7</mu>
-          <!-- <mu2>0.7</mu2> -->
+          <mu2>0.7</mu2>
         </ode>
       </friction>
       <contact>
