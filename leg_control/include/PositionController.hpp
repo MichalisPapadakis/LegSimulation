@@ -8,6 +8,10 @@
 #include <std_msgs/Float64.h>
 #include <control_msgs/JointControllerState.h>
 #include "leg_control/pos.h"
+#include <visualization_msgs/Marker.h>
+
+
+
 
 //leg class
 #include "leg/leg.hpp"
@@ -48,6 +52,8 @@ L(LegObj)
     Joint2_command = NH.advertise<std_msgs::Float64>("/leg/joint2_position_controller/command", 1000);
     Joint3_command = NH.advertise<std_msgs::Float64>("/leg/joint3_position_controller/command", 1000);
 
+    //set up marker publisher
+    GoalMarker = NH.advertise<visualization_msgs::Marker>("visualization_marker", 10);
 }
 
 /** @brief Service callback to set Position Goal. 
@@ -98,6 +104,36 @@ bool setTarget(leg_control::pos::Request &req, leg_control::pos::Response &res){
     ROS_INFO("[Position Controller] The new Goal is: xwd = %f, ywd = %f, zwd = %f \n",Xd(0),Xd(1),Xd(2));
 
   }
+
+
+  //Publish rviz cubic magenta marker at the goal position
+  visualization_msgs::Marker marker;
+  marker.header.frame_id = "world";
+  marker.header.stamp = ros::Time();
+  marker.ns = "my_namespace";
+  marker.id = 0;
+  marker.type = visualization_msgs::Marker::CUBE;
+  marker.action = visualization_msgs::Marker::ADD;
+  marker.pose.position.x = Xd(0);
+  marker.pose.position.y = Xd(1);
+  marker.pose.position.z = Xd(2);
+  marker.pose.orientation.x = 0.0;
+  marker.pose.orientation.y = 0.0;
+  marker.pose.orientation.z = 0.0;
+  marker.pose.orientation.w = 1.0;
+  marker.scale.x = 0.05;
+  marker.scale.y = 0.05;
+  marker.scale.z = 0.05;
+  marker.color.a = 1.0; // Don't forget to set the alpha!
+
+  // Magenta
+  marker.color.r = 1.0;
+  marker.color.g = 0.0;
+  marker.color.b = 1.0;
+
+  GoalMarker.publish( marker );
+
+
 
   //populate message
   q1m.data = Qd(0);
@@ -187,6 +223,9 @@ Eigen::Vector3d bestSol(){
   ros::Publisher Joint1_command;
   ros::Publisher Joint2_command;
   ros::Publisher Joint3_command;
+
+  //Marker publisher
+  ros::Publisher GoalMarker;
 
 #pragma endregion
 
