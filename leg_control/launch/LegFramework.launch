@@ -4,6 +4,9 @@
 <arg name="rvizConfig" default="$(find leg_control)/rvizConfigs/config1.rviz" />
 <arg name="model"      default="$(find leg_description)/urdf/my_leg.xacro" />  
 <arg name="end_effector_distance"      default="0.223" />
+<arg name="q1_0"      default="-0.0025" />
+<arg name="q2_0"      default="-1.1899" />
+<arg name="q3_0"      default="-1.2599" />
 
 <!-- PARAMETERS -->
 <param name="robot_description" command="$(find xacro)/xacro $(arg model)" />
@@ -33,7 +36,10 @@ args=" --perspective-file $(find leg_control)/rqt_perspectives/LegGui.perspectiv
 </include>
 
 <node name="RobotSpawner" pkg="gazebo_ros" type="spawn_model"
-        args=" -urdf -model robot -param robot_description" respawn="false" output="screen" />
+        args=" -urdf -model robot -param robot_description
+        -J base_to_link1  $(arg q1_0)
+        -J link1_to_link2 $(arg q2_0)
+        -J link2_to_link3 $(arg q3_0)" respawn="false" output="screen" />
 
 <!-- Static transform -->
 <node pkg="tf2_ros" type="static_transform_publisher" name="end_effector_broadcaster" args="$(arg end_effector_distance) 0 0 0 0 0 1 link3 end_effector" />

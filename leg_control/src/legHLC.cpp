@@ -9,7 +9,7 @@ int main(int argc, char **argv){
   HLC Controller ; 
 
   //Set loop rate
-  ros::Rate loop_rate(100);
+  ros::Rate loop_rate(1000);
 
   while (ros::ok())
   {
