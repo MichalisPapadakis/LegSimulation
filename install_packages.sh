@@ -69,9 +69,13 @@ cd ../
 catkin build 
 
 echo "#################"
-echo "Sourcing workspace"
+echo "Sourcing workspace:"
 echo "#################"
 
 source devel/setup.bash
+
+echo "#################"
+echo "Ready to launch!"
+echo "#################"
 
 
