@@ -31,13 +31,13 @@ The required packages (Eigen) can be installed by executing the shell script ins
 
   3. Save the contents of the repository in the src folder. 
 
-  * *  3a. Either directly download the contents (notice the `.` in the end of the second command.This doens't create a parent folder):
+  *  3a. Either directly download the contents (notice the `.` in the end of the second command.This doens't create a parent folder):
 
   `cd ~/<your_workspace>/src`
 
   `git clone https://MikePapas@bitbucket.org/csl_legged/legsimulation.git .`
 
-  * * 3b. Or download the to another folder, named `folder` and create a symlink the packages to src:  
+  * 3b. Or download the to another folder, named `folder` and create a symlink the packages to src:  
 
   `cd ~/<folder>`
 
