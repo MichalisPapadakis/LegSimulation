@@ -285,6 +285,9 @@
   <material> Gazebo/Orange </material>
   <collision>
     <surface>
+      <bounce>
+        <!-- <restitution_coefficient>1.0</restitution_coefficient> -->
+      </bounce>
       <friction>
       <torsional>
         <coefficient> 0 </coefficient>
