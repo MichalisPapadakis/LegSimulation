@@ -1,51 +1,26 @@
 ## Prerequisites:
 
-The packages used by the controllers are the following:
+Extra software which is used is listed below:
 
 1. [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page), a C++ template library for linear algebra: matrices, vectors, numerical solvers, and related algorithms.
 
+2. [Catkin tools](https://catkin-tools.readthedocs.io/en/latest/). [catkin](https://wiki.ros.org/catkin) is the official build system of ROS to generate executables, libraries, and interfaces. Catkin Command Line Tools are used in order to build packages in the workspace.
 
-The required packages (Eigen) can be installed by executing the shell script install_packages.sh.
+
+The required packages (Eigen, catkin tools) can be installed by executing the shell script install_packages.sh.
 
 ## Installation
 
 * Make sure you have Ubuntu 20.04 installed and running. This framework was developed on ROS Noetic and Gazebo 11, so this version of Ubuntu is necessary.
 
-* Download and install the Desktop-Full version of ROS Noetic, following the steps described [here](http://wiki.ros.org/noetic/Installation/Ubuntu). This version includes Gazebo 11 simulator.
+* Clone the repository in the desired folder using:
 
-* Install catkin tools. [catkin](https://wiki.ros.org/catkin) is the official build system of ROS to generate executables, libraries, and interfaces. Catkin Command Line Tools are used in order to build packages in the workspace. They can be installed in by following the instructions described [here](https://catkin-tools.readthedocs.io/en/latest/installing.html#installing-on-ubuntu-with-apt-get).
+`git clone git@bitbucket.org:csl_legged/legsimulation.git`
 
-* Create a catkin environment. The process is described below: 
+* Execute the install_packages.sh script, **providing** a workspace name. e.g: 
 
-  1. Source the environment:
+`./install_packages.sh <leg_workspace>` 
 
-  `source /opt/ros/noetic/setup.bash`
-
-  2. Create workspace:
-
-  `mkdir -p ~/<your_workspace>/src`
-
-  `cd ~/<your_workspace>`
-
-  `catkin init`
-
-  3. Save the contents of the repository in the src folder. 
-
-  *  3a. Either directly download the contents (notice the `.` in the end of the second command.This doens't create a parent folder):
-
-  `cd ~/<your_workspace>/src`
-
-  `git clone https://MikePapas@bitbucket.org/csl_legged/legsimulation.git .`
-
-  * 3b. Or download the to another folder, named `folder` and create a symlink the packages to src:  
-
-  `cd ~/<folder>`
-
-  `git clone https://MikePapas@bitbucket.org/csl_legged/legsimulation.git`
-
-  `ln -s ~/<folder>/legsimulation/leg_description ~/<your_workspace>/src/`
-
-  `ln -s ~/<folder>/legsimulation/leg_control ~/<your_workspace>/src/` 
 
 ## ROS & Gazebo
 ## Argos Leg model
