@@ -117,7 +117,8 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES leg_control
-#  CATKIN_DEPENDS message_generation gazebo_ros leg_description ros_control roscpp
+ CATKIN_DEPENDS message_runtime  
+#  gazebo_ros leg_description ros_control roscpp
 #  DEPENDS system_lib
 )
 
@@ -164,6 +165,16 @@ add_executable(legSim src/legSim.cpp)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+# Headers before nodes:
+add_dependencies(leg_position_controller ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(legGoalSet ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(legHLC ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(legControllerSelector ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(legSetEffort ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(legSetEllipse ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(legContact ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(legSim ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(leg_position_controller ${catkin_LIBRARIES}   )

@@ -1,3 +1,21 @@
+#!/bin/bash
+
+# Check if an argument was provided
+if [ $# -eq 0 ]; then
+  echo "No workspace name was provided!"
+  echo "Provide a workspace name by excecuting the script as:"
+  echo -e "\n ./install_packages.sh <workspace_name>"
+  exit 1
+elif [ $# -eq 1 ]; then 
+    workspace_name=$1 
+elif [ $# -ne 1 ]; then
+  echo "Multiple arguments were provided!"
+  echo "Provide only workspace name by excecuting the script as:"
+  echo -e "\n ./install_packages.sh <workspace_name>"
+  exit 1
+fi
+
+
 currentDir=$(pwd)
 cd
 
@@ -60,13 +78,38 @@ echo "#################"
 echo "Installed All packages"
 echo "#################"
 
+echo "Creating workspace and symlinks"
+echo "#################"
+
+# Create workspace:
+if !which catkin >/dev/null 2>&1; then
+    echo "catkin_tools is not installed."
+    echo "Try installing catkin tools seperately and restarting the terminal:"
+    echo -e "Use: \n sudo apt-get install python3-catkin-tools"
+    exit 1
+fi
+
+#source ros 
+source /opt/ros/noetic/setup.bash
+
+#create directories
+cd
+mkdir -p ~/$workspace_name/src
+cd ~/$workspace_name
+
+catkin init
+
+#create symlink:
+ln -s $currentDir/leg_description ~/$workspace_name/src/
+ln -s $currentDir/leg_control ~/$workspace_name/src/
+
 #build workspace
+echo "#################"
 echo "Building workspace"
 echo "#################"
 
-cd $currentDir
-cd ../
-catkin build 
+catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release
+
 
 echo "#################"
 echo "Sourcing workspace:"
