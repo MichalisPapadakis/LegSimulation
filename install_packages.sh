@@ -1,5 +1,8 @@
 #!/bin/bash
 
+currentDir=$(pwd)
+cd
+
 # Check if an argument was provided
 if [ $# -eq 0 ]; then
   echo "No workspace name was provided!"
@@ -15,10 +18,21 @@ elif [ $# -ne 1 ]; then
   exit 1
 fi
 
+# -------------------- #
+# Install dependencies #
+# -------------------- #
 
-currentDir=$(pwd)
-cd
+#Instal ros noetic:
+echo "#################"
+echo "Installing Ros Noetic:"
+echo "#################"
+sudo apt install ros-noetic-desktop
 
+#install gazebo
+echo "#################"
+echo "Installing Gazebo:"
+echo "#################"
+sudo  apt-get install gazebo11
 
 #Instal catkin tools:
 echo "#################"
@@ -30,9 +44,20 @@ sudo apt-get install python3-catkin-tools
 echo "#################"
 echo "Installing Eigen:"
 echo "#################"
-sudo apt install libeigen3-dev
+# sudo apt install libeigen3-dev
 
-#Instal tf2:
+#new way for eigen:
+cd
+mkdir EigenFolder
+cd EigenFolder 
+git clone https://gitlab.com/libeigen/eigen.git
+cd eigen
+mkdir build_dir
+cd build_dir
+cmake ../
+make install
+
+#Instal xacro:
 echo "#################"
 echo "Installing xacro:"
 echo "#################"
@@ -81,7 +106,11 @@ echo "#################"
 echo "Creating workspace and symlinks"
 echo "#################"
 
-# Create workspace:
+
+
+# -------------------- #
+#   Create Workspace   #
+# -------------------- #
 if !which catkin >/dev/null 2>&1; then
     echo "catkin_tools is not installed."
     echo "Try installing catkin tools seperately and restarting the terminal:"
@@ -109,7 +138,6 @@ echo "Building workspace"
 echo "#################"
 
 catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release
-
 
 echo "#################"
 echo "Sourcing workspace:"
