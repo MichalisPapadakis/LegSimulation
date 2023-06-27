@@ -46,6 +46,8 @@ echo "Installing Eigen:"
 echo "#################"
 # sudo apt install libeigen3-dev
 
+#libgazebo_ros-bumper
+
 #new way for eigen:
 cd
 mkdir EigenFolder
@@ -75,18 +77,20 @@ echo "#################"
 echo "Installing gazebo_ros:"
 echo "#################"
 sudo apt-get install ros-noetic-gazebo-ros
-
+sudo apt-get install ros-noetic-gazebo-plugins
 
 #ros_control:
 echo "#################"
 echo "Installing ros controllers:"
 echo "#################"
 sudo apt-get install ros-noetic-position-controllers
+sudo apt-get install ros-noetic-ros-controllers
 sudo apt-get install ros-noetic-joint-trajectory-controller
 sudo apt-get install ros-noetic-effort-controllers
 sudo apt-get install ros-noetic-controller-manager
 sudo apt-get install ros-noetic-ros-control
 sudo apt-get install ros-noetic-control-msgs
+sudo apt-get install ros-noetic-gazebo-ros-control
 
 #extra:
 echo "#################"
