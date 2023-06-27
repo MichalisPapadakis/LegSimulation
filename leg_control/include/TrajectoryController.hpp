@@ -237,8 +237,8 @@ bool GenerateVerticalEllipse(){
  */
 bool generateQwp( Eigen::MatrixXd Xwp, Eigen::VectorXd twp){
   using Eigen::seq ;
-  using Eigen::seqN ;
-  using Eigen::all; 
+  using Eigen::seqN;
+  using Eigen::placeholders::all; 
 
   tw = twp; 
 

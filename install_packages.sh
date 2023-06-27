@@ -55,7 +55,7 @@ cd eigen
 mkdir build_dir
 cd build_dir
 cmake ../
-make install
+sudo make install
 
 #Instal xacro:
 echo "#################"
